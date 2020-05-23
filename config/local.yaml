@@ -1,0 +1,31 @@
+# name: test2
+# Change default server ports
+server:
+  applicationConnectors:
+    - type: http
+      port: 8000
+  adminConnectors:
+    - type: http
+      port: 8001
+#  rootPath: /
+
+assets:
+  mappings:
+    /assets: /
+  overrides:
+    /: /client/build
+
+database:
+  driverClass: org.sqlite.JDBC
+  url: jdbc:sqlite:/home/sharan/ProjectsAndLearning/Udaan/projects/prac/test2/sheets.db
+  properties:
+    hibernate.dialect: org.hibernate.dialect.H2Dialect
+    foreign_keys: true
+    minSize: 1
+    maxSize: 32
+    maxWaitForConnection: 15s
+    validationQueryTimeout: 10s
+    checkConnectionWhileIdle: false
+    evictionInterval: 10s
+    minIdleTime: 1 minute
+    busy_timeout: 10000

@@ -1,0 +1,25 @@
+
+server:
+
+  applicationConnectors:
+    - type: http
+      port: 8000
+  adminConnectors:
+    - type: http
+      port: 8001
+
+
+assets:
+  mappings:
+    /assets: /
+  overrides:
+    /: /client/build
+
+
+database:
+  driverClass: org.sqlite.JDBC
+  url: jdbc:sqlite:/home/sharan/ProjectsAndLearning/Udaan/projects/prac/test2/sheets.db
+  properties:
+    foreign_keys: true
+
+#     hibernate.dialect: org.hibernate.dialect.H2Dialect

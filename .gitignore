@@ -1,0 +1,9 @@
+./config/credentials.json
+/config/credentials.json
+config/credentials.json
+./src/main/resources/credentials.json
+/src/main/resources/credentials.json
+src/main/resources/credentials.json
+# Project exclude paths
+/.gradle/
+/build/
