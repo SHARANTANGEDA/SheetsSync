@@ -20,6 +20,7 @@ database:
   url: jdbc:sqlite:/home/sharan/ProjectsAndLearning/Udaan/projects/prac/test2/sheets.db
   properties:
     hibernate.dialect: org.hibernate.dialect.H2Dialect
+    hibernate.hbm2ddl.auto: create
     foreign_keys: true
     minSize: 1
     maxSize: 32

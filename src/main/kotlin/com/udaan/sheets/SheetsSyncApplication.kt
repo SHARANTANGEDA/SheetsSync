@@ -2,14 +2,13 @@ package com.udaan.sheets
 
 //import io.dropwizard.jdbi3.JdbiFactory
 
-import com.intellij.openapi.updateSettings.impl.Product
 import com.udaan.sheets.api.EnterSheetName
+import com.udaan.sheets.db.SheetTableDao
+import com.udaan.sheets.db.SheetTableService
 import com.udaan.sheets.db.SheetsInfoDao
 import com.udaan.sheets.db.SheetsInfoService
-import com.udaan.sheets.models.SheetsInfo
 import io.dropwizard.Application
 import io.dropwizard.bundles.assets.ConfiguredAssetsBundle
-import io.dropwizard.db.DataSourceFactory
 import io.dropwizard.db.PooledDataSourceFactory
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
@@ -17,8 +16,6 @@ import org.eclipse.jetty.servlets.CrossOriginFilter
 import org.jdbi.v3.core.Jdbi
 import java.util.*
 import javax.servlet.DispatcherType
-import io.dropwizard.hibernate.HibernateBundle;
-
 
 
 class SheetsSyncApplication : Application<SheetsSyncConfiguration>() {
@@ -26,26 +23,22 @@ class SheetsSyncApplication : Application<SheetsSyncConfiguration>() {
     override fun getName(): String {
         return "SheetsSync"
     }
-    private val hibernateBundle: HibernateBundle<SheetsSyncConfiguration> =
-        object : HibernateBundle<SheetsSyncConfiguration>(
-            SheetsInfo::class.java
-        ) {
-            override fun getDataSourceFactory(configuration: SheetsSyncConfiguration): DataSourceFactory? {
-                return configuration.getDataSourceFactory()
-            }
-        }
+
     override fun initialize(bootstrap: Bootstrap<SheetsSyncConfiguration>) {
         bootstrap.addBundle(ConfiguredAssetsBundle("/assets/", "/", "index.html"))
-        bootstrap.addBundle(hibernateBundle)
     }
 
     override fun run(configuration: SheetsSyncConfiguration,
                      environment: Environment) {
 
         environment.jersey().urlPattern = "/api/*"
-        val sheetsInfoDao = SheetsInfoDao(hibernateBundle.sessionFactory)
-        SheetsInfoService.setDAO(sheetsInfoDao)
-        environment.jersey().register(EnterSheetName(sheetsInfoDao))
+
+        val factory = JdbiFactory(true)
+        val jdbi: Jdbi = factory.build(environment, configuration.getDataSourceFactory(), "sqlite3")
+        val sheetsInfoDao = jdbi.onDemand(SheetsInfoDao::class.java)
+        val sheetTabledao = jdbi.onDemand(SheetTableDao::class.java)
+        //environment.jersey().register(UserResource(jdbi))
+        environment.jersey().register(EnterSheetName(SheetsInfoService(sheetsInfoDao), SheetTableService(sheetTabledao)))
         Cors.insecure(environment)
     }
 }

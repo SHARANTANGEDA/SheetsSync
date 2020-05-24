@@ -95,7 +95,7 @@ class GoogleSheet {
         val service = sheetsService()
         val res = service.spreadsheets().values().get(spreadsheetId, range)
         val values = res.execute().getValues()
-        println(values.toString())
+        println(values.size)
         return if (values != null && values.size != 0) {
             values
         } else {

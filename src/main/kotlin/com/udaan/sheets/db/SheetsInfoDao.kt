@@ -1,51 +1,57 @@
 package com.udaan.sheets.db
-import com.udaan.sheets.models.SheetsInfo
-import io.dropwizard.hibernate.AbstractDAO
-import org.hibernate.SessionFactory
-import org.hibernate.query.Query
-import javax.persistence.NoResultException
+import com.udaan.sheets.models.SheetsInfoMapper
+import org.jdbi.v3.sqlobject.config.RegisterRowMapper
+import org.jdbi.v3.sqlobject.customizer.Bind
+import org.jdbi.v3.sqlobject.statement.SqlQuery
+import org.jdbi.v3.sqlobject.statement.SqlUpdate
 
-class SheetsInfoDao(sessionFactory: SessionFactory?) : AbstractDAO<SheetsInfo?>(sessionFactory) {
+@RegisterRowMapper(SheetsInfoMapper::class)
+public interface SheetsInfoDao {
 
-//    fun createTable() {
-//        namedQuery(
-//            "udaan.SheetsInfo.createTable"
-//        ) as Query
-//    }
+    @SqlUpdate("create table if not exists SheetsInfo (id integer primary key, spreadsheetid varchar(150) not " +
+            "null, sheetname varchar(150) not null, cols integer not null, structured varchar(50) not null, columnnames varchar (350))")
+    fun createSheetsInfoTable()
 
-    fun check(spreadsheetid: String, sheetname: String): String? {
-        val query = (namedQuery("udaan.SheetsInfo.check").setParameter("spreadsheetid", spreadsheetid).setParameter("sheetname", sheetname)as Query)
-        return try {
-            query.singleResult.toString()
-        } catch (noResult: NoResultException) {
-            null
-        }
-    }
+    @SqlUpdate("insert into SheetsInfo (spreadsheetid, sheetname, cols, structured, columnNames) " +
+            "values (:spreadsheetid, :sheetname, :cols, :structured, :columnNames)")
+    fun insert(@Bind("spreadsheetid") spreadsheetid:String, @Bind("sheetname")sheetname:String,
+               @Bind("cols") cols: Int, @Bind("structured") structured: String, @Bind("columnNames") columnNames: String)
 
-    fun insertSheet(spreadsheetid: String, sheetname: String): SheetsInfo? {
-        return persist(SheetsInfo(spreadsheetid, sheetname))
-    }
+    @SqlQuery("select id from SheetsInfo where spreadsheetid = :spreadsheetid and sheetname = :sheetname")
+    fun checkExistence(@Bind("spreadsheetid") spreadsheetid: String, @Bind("sheetname")sheetname: String): String?
+
+    @SqlUpdate("delete from SheetsInfo where spreadsheetid = :spreadsheetid and sheetname = :sheetname")
+    fun remove(@Bind("spreadsheetid") spreadsheetid: String, @Bind("sheetname")sheetname: String)
+
+
 }
 
 
-object SheetsInfoService {
+class SheetsInfoService {
+    lateinit var sheetsInfoDao: SheetsInfoDao
 
-    private lateinit var sheetsInfoDao: SheetsInfoDao
-    fun setDAO(userDAO: SheetsInfoDao) {
-        SheetsInfoService.sheetsInfoDao = userDAO
+    constructor() {}
+    constructor(sheetsInfoDao: SheetsInfoDao) {
+        this.sheetsInfoDao = sheetsInfoDao
     }
-//
-//    fun createTable(): Int {
-//        sheetsInfoDao.createTable()
-//        return 1
-//    }
 
-    fun insertRow(spreadsheetid: String, sheetname: String): Int {
-        sheetsInfoDao.insertSheet(spreadsheetid, sheetname)
+    fun createSheetsInfoTable(): Int {
+        println("Created Table")
+        sheetsInfoDao.createSheetsInfoTable()
         return 1
     }
 
-    private fun checkRow(spreadsheetid: String, sheetname: String): String? {
-        return sheetsInfoDao.check(spreadsheetid, sheetname)
+    fun insert(spreadsheetid:String, sheetname:String, cols: Int, structured: String,columnNames: String): Int {
+        sheetsInfoDao.insert(spreadsheetid, sheetname, cols, structured, columnNames)
+        println("Inserted Data")
+        return 1
     }
+    fun checkExistence(spreadsheetid: String, sheetname: String): String? {
+        return sheetsInfoDao.checkExistence(spreadsheetid, sheetname)
+    }
+    fun remove(spreadsheetid: String, sheetname: String): Int {
+        sheetsInfoDao.remove(spreadsheetid, sheetname)
+        return 1
+    }
+
 }
