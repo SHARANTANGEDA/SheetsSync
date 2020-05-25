@@ -9,24 +9,38 @@ import java.sql.SQLException
 import javax.validation.constraints.NotBlank
 
 
-class SheetsInfo(id: Int, spreadsheetid: String, sheetname: String, cols: Int, columnNames: String) {
+class SheetsInfo(id: Int, spreadsheetid: String, sheetname: String, cols: Int, state: String, structured: String,
+                 columnNames: String, columnTypes: String) {
 
-    private val id:Int = id
+//    constructor() {}
+    val id:Int = id
 
     @Length(min = 1, max = 150)
     @NotBlank
-    private val spreadsheetid = spreadsheetid
+    val spreadsheetid = spreadsheetid
 
     @NotBlank
     @Length(min = 1, max = 150)
-    private val sheetname: String = sheetname
+    val sheetname: String = sheetname
 
 
-    private val cols: Int = cols
+    val cols: Int = cols
 
     @NotBlank
-    @Length(min = 3, max = 350)
-    private val columnNames : String = columnNames
+    @Length(min = 1, max = 50)
+    val state: String = state
+
+    @NotBlank
+    @Length(min = 1, max = 50)
+    val structured: String = structured
+
+    @NotBlank
+    @Length(min = 3, max = 500)
+    val columnnames : String = columnNames
+
+    @NotBlank
+    @Length(min = 3, max = 500)
+    val columntypes : String = columnTypes
 }
 
 
@@ -39,7 +53,10 @@ class SheetsInfoMapper() : RowMapper<SheetsInfo> {
             resultSet.getString("spreadsheetid"),
             resultSet.getString("sheetname"),
             resultSet.getInt("cols"),
-            resultSet.getString("columnnames")
+            resultSet.getString("state"),
+            resultSet.getString("structured"),
+            resultSet.getString("columnnames"),
+            resultSet.getString("columntypes")
         )
     }
 }

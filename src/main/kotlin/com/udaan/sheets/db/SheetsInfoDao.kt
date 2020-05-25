@@ -1,4 +1,5 @@
 package com.udaan.sheets.db
+import com.udaan.sheets.models.SheetsInfo
 import com.udaan.sheets.models.SheetsInfoMapper
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper
 import org.jdbi.v3.sqlobject.customizer.Bind
@@ -9,16 +10,26 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate
 public interface SheetsInfoDao {
 
     @SqlUpdate("create table if not exists SheetsInfo (id integer primary key, spreadsheetid varchar(150) not " +
-            "null, sheetname varchar(150) not null, cols integer not null, structured varchar(50) not null, columnnames varchar (350))")
+            "null, sheetname varchar(150) not null, cols integer not null,state varchar(50) not null," +
+            " structured varchar(50) not null, columnnames varchar (500), columntypes varchar(500))")
     fun createSheetsInfoTable()
 
-    @SqlUpdate("insert into SheetsInfo (spreadsheetid, sheetname, cols, structured, columnNames) " +
-            "values (:spreadsheetid, :sheetname, :cols, :structured, :columnNames)")
+    @SqlUpdate("insert into SheetsInfo (spreadsheetid, sheetname, cols, state, structured, columnNames, columntypes) " +
+            "values (:spreadsheetid, :sheetname, :cols, :state, :structured, :columnNames, :columnTypes)")
     fun insert(@Bind("spreadsheetid") spreadsheetid:String, @Bind("sheetname")sheetname:String,
-               @Bind("cols") cols: Int, @Bind("structured") structured: String, @Bind("columnNames") columnNames: String)
+               @Bind("cols") cols: Int, @Bind("state") state: String,
+               @Bind("structured") structured: String, @Bind("columnNames") columnNames: String, @Bind("columnTypes") columnTypes: String)
+
+    @SqlUpdate("update  SheetsInfo set state = :state where spreadsheetid=:spreadsheetid and sheetname=:sheetname")
+    fun updateState(@Bind("spreadsheetid") spreadsheetid:String, @Bind("sheetname")sheetname:String,
+                    @Bind("state") state: String)
 
     @SqlQuery("select id from SheetsInfo where spreadsheetid = :spreadsheetid and sheetname = :sheetname")
     fun checkExistence(@Bind("spreadsheetid") spreadsheetid: String, @Bind("sheetname")sheetname: String): String?
+
+    @SqlQuery("select id, spreadsheetid, sheetname, cols, state, structured, columnnames, columntypes from SheetsInfo " +
+            "where spreadsheetid = :spreadsheetid and sheetname = :sheetname")
+    fun getInfo(@Bind("spreadsheetid") spreadsheetid: String, @Bind("sheetname")sheetname: String): SheetsInfo
 
     @SqlUpdate("delete from SheetsInfo where spreadsheetid = :spreadsheetid and sheetname = :sheetname")
     fun remove(@Bind("spreadsheetid") spreadsheetid: String, @Bind("sheetname")sheetname: String)
@@ -41,14 +52,24 @@ class SheetsInfoService {
         return 1
     }
 
-    fun insert(spreadsheetid:String, sheetname:String, cols: Int, structured: String,columnNames: String): Int {
-        sheetsInfoDao.insert(spreadsheetid, sheetname, cols, structured, columnNames)
+    fun insert(spreadsheetid:String, sheetname:String, cols: Int, state: String, structured: String,columnNames: String, columnTypes: String): Int {
+        sheetsInfoDao.insert(spreadsheetid, sheetname, cols, state, structured, columnNames, columnTypes)
+        println("Inserted Data")
+        return 1
+    }
+    fun updateState(spreadsheetid:String, sheetname:String, state: String): Int {
+        sheetsInfoDao.updateState(spreadsheetid, sheetname, state)
         println("Inserted Data")
         return 1
     }
     fun checkExistence(spreadsheetid: String, sheetname: String): String? {
         return sheetsInfoDao.checkExistence(spreadsheetid, sheetname)
     }
+
+    fun getInfo(spreadsheetid: String, sheetname: String): SheetsInfo {
+        return sheetsInfoDao.getInfo(spreadsheetid, sheetname)
+    }
+
     fun remove(spreadsheetid: String, sheetname: String): Int {
         sheetsInfoDao.remove(spreadsheetid, sheetname)
         return 1

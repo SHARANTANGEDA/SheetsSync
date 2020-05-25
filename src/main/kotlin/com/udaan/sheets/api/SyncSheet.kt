@@ -1,21 +1,29 @@
 package com.udaan.sheets.api
 
 import com.udaan.sheets.core.GoogleSheet
+import com.udaan.sheets.core.ManagedPeriodicTask
+import com.udaan.sheets.core.SpreadSheetSyncBackgroundTask
 import com.udaan.sheets.db.SheetTableService
 import com.udaan.sheets.db.SheetsInfoService
-import java.lang.StringBuilder
-import javax.ws.rs.*
+import io.dropwizard.lifecycle.Managed
+import io.dropwizard.setup.Environment
+import javax.ws.rs.Consumes
+import javax.ws.rs.POST
+import javax.ws.rs.Path
+import javax.ws.rs.Produces
 import javax.ws.rs.core.Form
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
+
 @Path("/")
-class EnterSheetName(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTableService) {
+class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTableService, environment: Environment) {
     private lateinit var spreadSheetLink: String
     private lateinit var range: String
     private lateinit var spreadSheetId: String
     private var sheetsInfoService: SheetsInfoService = sheetsInfoService
     private var sheetTableService: SheetTableService = sheetTableService
+    private val environment: Environment = environment
     private lateinit var columnNames: List<String>
     private lateinit var columnTypes: List<String>
     private var hasLabel: Boolean = true
@@ -53,7 +61,8 @@ class EnterSheetName(sheetsInfoService: SheetsInfoService, sheetTableService: Sh
             val sheets = GoogleSheet()
             val sheetData = sheets.getSpreadSheetRecords(spreadSheetId, range)
             if (sheetsInfoService.checkExistence(spreadSheetId, range) == null) {
-                val ins = sheetsInfoService.insert(spreadSheetId, range, this.columnNames.size + 1, structured.toString(), columnNames.toString())
+                val ins = sheetsInfoService.insert(spreadSheetId, range, this.columnNames.size + 1,"init",
+                    structured.toString(), columnNames.toString(), columnTypes.toString())
                 println("After Insert: $ins")
                 val primKey = sheetsInfoService.checkExistence(spreadSheetId, range)
                 if(structured) {
@@ -61,6 +70,7 @@ class EnterSheetName(sheetsInfoService: SheetsInfoService, sheetTableService: Sh
                         syncStructuredTable(primKey.toString(), columnNames, columnTypes, hasLabel, sheetData)
                     }
                 }
+// TODO: Add for Async also
 //                else {
 //                    syncTable(primKey.toString(), hasLabel, sheetData)
 //                }
@@ -75,13 +85,11 @@ class EnterSheetName(sheetsInfoService: SheetsInfoService, sheetTableService: Sh
                 println("Already Exists")
                 Response.status(403).entity("A Job is Already running for this SpreadSheet").build()
             }
-
-
         }
 
     }
 
-    private fun syncStructuredTable(tableName: String, columnNames: List<String>, columnTypes: List<String>, hasLabel: Boolean, sheetData: List<List<Any>>) {
+     fun syncStructuredTable(tableName: String, columnNames: List<String>, columnTypes: List<String>, hasLabel: Boolean, sheetData: List<List<Any>>) {
         val str = StringBuilder()
         str.append("rowId integer primary key,")
         for((colInd, columnName) in columnNames.withIndex()) {
@@ -99,17 +107,22 @@ class EnterSheetName(sheetsInfoService: SheetsInfoService, sheetTableService: Sh
         }
         val colStr = columnNames.joinToString(separator = ",")
         println("L: $colStr")
-        var colValues: MutableList<String> = columnNames as MutableList<String>
-        colValues.clear()
-        var insertData = StringBuilder()
+        val insertData = StringBuilder()
         for (row in newSheet) {
             insertData.append("(")
             insertData.append(row.joinToString(separator = ",") { it -> "\"$it\"" })
             insertData.append("),")
         }
         sheetTableService.insert("table$tableName", colStr, insertData.toString().substring(0, insertData.length-1))
-//        sheetTableService.insert("table$tableName", colStr, colValues)
+        sheetsInfoService.updateState(spreadSheetId, range, "run")
+//        val scheduledTask = SchedulerTask(sheetsInfoService, sheetTableService)
+//        val periodicTask = SpreadSheetSyncBackgroundTask(scheduledTask, spreadSheetId, range, hasLabel)
+//        val managedImplementer: Managed = ManagedPeriodicTask(periodicTask)
+//        environment.lifecycle().manage(managedImplementer)
     }
+
+
+
 
     private fun syncTable(tableName: String, hasLabel: Boolean) {
 
@@ -126,5 +139,39 @@ class EnterSheetName(sheetsInfoService: SheetsInfoService, sheetTableService: Sh
         val idx = spreadSheetLink.indexOf("/d/")
         val end = spreadSheetLink.indexOf("/", idx + 3)
         return spreadSheetLink.substring(idx + 3, end)
+    }
+}
+
+class SchedulerTask (private val sheetsInfoService: SheetsInfoService, private val sheetTableService: SheetTableService){
+    fun syncTaskStructured(spreadSheetId: String, sheetName: String, hasLabel: Boolean) {
+        val sheetInfo = sheetsInfoService.getInfo(spreadSheetId, sheetName)
+        val columnNames = sheetInfo.columnnames.substring(1, sheetInfo.columnnames.length - 1).split(',')
+        val columnTypes = sheetInfo.columntypes.substring(1, sheetInfo.columntypes.length - 1).split(',')
+        val primKey = sheetInfo.id
+        val sheets = GoogleSheet()
+        val sheetData = sheets.getSpreadSheetRecords(spreadSheetId, sheetName)
+        val str = StringBuilder()
+        for((colInd, columnName) in columnNames.withIndex()) {
+            str.append(columnName)
+            str.append(" ")
+            str.append(columnTypes[colInd])
+            if (colInd != columnNames.size-1) {
+                str.append(",")
+            }
+        }
+        sheetTableService.updateTable("table$primKey", str.toString())
+        var newSheet: List<List<String>> = sheetData as List<List<String>>
+        if(hasLabel) {
+            newSheet = sheetData.subList(1, sheetData.size)
+        }
+        val colStr = columnNames.joinToString(separator = ",")
+        val insertData = StringBuilder()
+        for (row in newSheet) {
+            insertData.append("(")
+            insertData.append(row.joinToString(separator = ",") { it -> "\"$it\"" })
+            insertData.append("),")
+        }
+        sheetTableService.insert("table$primKey", colStr, insertData.toString())
+        println("RES: $columnNames")
     }
 }

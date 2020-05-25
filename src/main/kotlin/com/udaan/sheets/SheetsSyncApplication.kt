@@ -2,7 +2,7 @@ package com.udaan.sheets
 
 //import io.dropwizard.jdbi3.JdbiFactory
 
-import com.udaan.sheets.api.EnterSheetName
+import com.udaan.sheets.api.SheetSync
 import com.udaan.sheets.db.SheetTableDao
 import com.udaan.sheets.db.SheetTableService
 import com.udaan.sheets.db.SheetsInfoDao
@@ -38,7 +38,7 @@ class SheetsSyncApplication : Application<SheetsSyncConfiguration>() {
         val sheetsInfoDao = jdbi.onDemand(SheetsInfoDao::class.java)
         val sheetTabledao = jdbi.onDemand(SheetTableDao::class.java)
         //environment.jersey().register(UserResource(jdbi))
-        environment.jersey().register(EnterSheetName(SheetsInfoService(sheetsInfoDao), SheetTableService(sheetTabledao)))
+        environment.jersey().register(SheetSync(SheetsInfoService(sheetsInfoDao), SheetTableService(sheetTabledao), environment))
         Cors.insecure(environment)
     }
 }
