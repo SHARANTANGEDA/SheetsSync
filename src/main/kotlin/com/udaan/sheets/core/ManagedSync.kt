@@ -7,24 +7,6 @@ import io.dropwizard.lifecycle.Managed
 import org.glassfish.jersey.internal.guava.ThreadFactoryBuilder
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
-
-//
-//class ManagedPeriodicTask(private val periodicTask: AbstractScheduledService) :
-//    Managed {
-////    private val LOGGER = LoggerFactory.getLogger(ManagedPeriodicTask::class.java)
-//
-//    @Throws(Exception::class)
-//    override fun start() {
-//        periodicTask.startAsync().awaitRunning()
-//    }
-//
-//    @Throws(Exception::class)
-//    override fun stop() {
-//        periodicTask.stopAsync().awaitTerminated()
-//    }
-//
-//}
 
 class BackgroundTask(sheetsInfoService : SheetsInfoService, sheetTableService: SheetTableService,
                      spreadSheetId: String, range:String, hasLabel:Boolean, tableName: String) : Managed {
@@ -53,21 +35,3 @@ class BackgroundTask(sheetsInfoService : SheetsInfoService, sheetTableService: S
         mainRunner.shutdown()
     }
 }
-//    override fun run() {
-//        try {
-//            runInner()
-//        } catch (e: java.lang.Exception) {
-//            println("Error executing task$e")
-//        }
-//    }
-//
-//    @Throws(java.lang.Exception::class)
-//    private fun runInner() {
-//
-//        scheduledTask.run()
-//    }
-//
-//    companion object {
-//        private val log: Logger = Logger.getLogger(MessageTask::class.java)
-//    }
-//}
