@@ -34,7 +34,7 @@ class BackgroundTask(sheetsInfoService : SheetsInfoService, sheetTableService: S
 
     // injected by DI or set programatically
     //@Inject
-    private val delay: Long = 0
+    private val delay: Long = 15
 
     //@Inject
     private val period: Long = 30
