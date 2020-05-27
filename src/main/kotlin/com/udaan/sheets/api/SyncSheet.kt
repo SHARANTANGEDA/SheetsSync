@@ -1,16 +1,11 @@
 package com.udaan.sheets.api
 
+import com.udaan.sheets.core.BackgroundTask
 import com.udaan.sheets.core.GoogleSheet
-import com.udaan.sheets.core.ManagedPeriodicTask
-import com.udaan.sheets.core.SpreadSheetSyncBackgroundTask
 import com.udaan.sheets.db.SheetTableService
 import com.udaan.sheets.db.SheetsInfoService
-import io.dropwizard.lifecycle.Managed
 import io.dropwizard.setup.Environment
-import javax.ws.rs.Consumes
-import javax.ws.rs.POST
-import javax.ws.rs.Path
-import javax.ws.rs.Produces
+import javax.ws.rs.*
 import javax.ws.rs.core.Form
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
@@ -28,6 +23,7 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
     private lateinit var columnTypes: List<String>
     private var hasLabel: Boolean = true
     private var structured: Boolean = true
+    private var map : MutableMap<String, BackgroundTask> = mutableMapOf()
 
     @Path("/enter")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -89,7 +85,22 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
 
     }
 
-     fun syncStructuredTable(tableName: String, columnNames: List<String>, columnTypes: List<String>, hasLabel: Boolean, sheetData: List<List<Any>>) {
+    @Path("/cancelSync/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @GET
+    fun stopSync(@PathParam("id") id: String) {
+        val backgroundTask = map.computeIfPresent(id) { _, backgroundTask -> backgroundTask }
+        if (backgroundTask != null) {
+            backgroundTask.stop()
+            map.remove(id)
+            Response.status(200).entity("Success").build()
+        }else {
+            Response.status(404).entity("Job is not found, please check again").build()
+        }
+    }
+
+
+     private fun syncStructuredTable(tableName: String, columnNames: List<String>, columnTypes: List<String>, hasLabel: Boolean, sheetData: List<List<Any>>) {
         val str = StringBuilder()
         str.append("rowId integer primary key,")
         for((colInd, columnName) in columnNames.withIndex()) {
@@ -115,11 +126,15 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
         }
         sheetTableService.insert("table$tableName", colStr, insertData.toString().substring(0, insertData.length-1))
         sheetsInfoService.updateState(spreadSheetId, range, "run")
-//        val scheduledTask = SchedulerTask(sheetsInfoService, sheetTableService)
+//        val scheduledTask = SchedulerTask(sheetsInfoService, sheetTableService, spreadSheetId, range, hasLabel)
 //        val periodicTask = SpreadSheetSyncBackgroundTask(scheduledTask, spreadSheetId, range, hasLabel)
-//        val managedImplementer: Managed = ManagedPeriodicTask(periodicTask)
-//        environment.lifecycle().manage(managedImplementer)
+         //        val managedImplementer: Managed = ManagedPeriodicTask(periodicTask)
+        val periodicTask = BackgroundTask(sheetsInfoService, sheetTableService, spreadSheetId, range, hasLabel, "table$tableName")
+        map["table$tableName"] = periodicTask
+        environment.lifecycle().manage(periodicTask)
+        periodicTask.start()
     }
+
 
 
 
@@ -142,8 +157,11 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
     }
 }
 
-class SchedulerTask (private val sheetsInfoService: SheetsInfoService, private val sheetTableService: SheetTableService){
-    fun syncTaskStructured(spreadSheetId: String, sheetName: String, hasLabel: Boolean) {
+class SchedulerTask (private val sheetsInfoService: SheetsInfoService, private val sheetTableService: SheetTableService,
+                     private val spreadSheetId: String,private val sheetName: String, private val hasLabel: Boolean) : Runnable{
+
+    fun syncTaskStructured() {
+        println("Running again")
         val sheetInfo = sheetsInfoService.getInfo(spreadSheetId, sheetName)
         val columnNames = sheetInfo.columnnames.substring(1, sheetInfo.columnnames.length - 1).split(',')
         val columnTypes = sheetInfo.columntypes.substring(1, sheetInfo.columntypes.length - 1).split(',')
@@ -171,7 +189,18 @@ class SchedulerTask (private val sheetsInfoService: SheetsInfoService, private v
             insertData.append(row.joinToString(separator = ",") { it -> "\"$it\"" })
             insertData.append("),")
         }
-        sheetTableService.insert("table$primKey", colStr, insertData.toString())
-        println("RES: $columnNames")
+        sheetTableService.insert("table$primKey", colStr, insertData.toString().substring(0, insertData.length-1))
+    }
+
+    override fun run() {
+        try {
+            println("In run")
+            syncTaskStructured()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println("ERROR - unexpected exception"+e.message)
+        }
+
     }
 }
+

@@ -13,7 +13,7 @@ public interface SheetTableDao {
     @SqlUpdate("create table if not exists <tableName> (<columns>)")
     fun createSheetsInfoTable(@Define("tableName") tableName: String, @Define("columns") columns: String)
 
-    @SqlUpdate("delete table <tableName>")
+    @SqlUpdate("drop table if exists <tableName>")
     fun deleteTable(@Define("tableName") tableName: String)
 
     @SqlUpdate("insert into <tableName> (<columns>) values <columnValue>")
@@ -47,9 +47,7 @@ class SheetTableService {
     }
 
     fun insert(tableName: String, columns: String, columnValues: String): Int {
-        println("IN INSERT:$columnValues")
         sheetsTableDao.insert(tableName, columns, columnValues)
-        println("Inserted Data")
         return 1
     }
 //    fun remove(spreadsheetid: String, sheetname: String): Int {

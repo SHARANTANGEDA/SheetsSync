@@ -10,6 +10,8 @@ import com.udaan.sheets.db.SheetsInfoService
 import io.dropwizard.Application
 import io.dropwizard.bundles.assets.ConfiguredAssetsBundle
 import io.dropwizard.db.PooledDataSourceFactory
+import io.dropwizard.lifecycle.Managed
+import io.dropwizard.lifecycle.ServerLifecycleListener
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import org.eclipse.jetty.servlets.CrossOriginFilter
@@ -38,7 +40,21 @@ class SheetsSyncApplication : Application<SheetsSyncConfiguration>() {
         val sheetsInfoDao = jdbi.onDemand(SheetsInfoDao::class.java)
         val sheetTabledao = jdbi.onDemand(SheetTableDao::class.java)
         //environment.jersey().register(UserResource(jdbi))
+        environment.lifecycle().addServerLifecycleListener(ServerLifecycleListener {
+            println("I work")
+        })
         environment.jersey().register(SheetSync(SheetsInfoService(sheetsInfoDao), SheetTableService(sheetTabledao), environment))
+        environment.lifecycle().manage(object : Managed {
+            @Throws(Exception::class)
+            override fun start() {
+                println("Started YESSS")
+            }
+
+            @Throws(Exception::class)
+            override fun stop() {
+                println("Stopped")
+            }
+        })
         Cors.insecure(environment)
     }
 }
