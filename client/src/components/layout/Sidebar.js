@@ -3,7 +3,6 @@ import {Link} from 'react-router-dom'
 import PropTypes from 'prop-types'
 import {connect} from 'react-redux'
 import {logoutUser} from '../../actions/authActions'
-import GoogleLogoutButton from "./GoogleLogoutButton";
 
 class Sidebar extends Component {
 	constructor(props) {
@@ -72,7 +71,6 @@ class Sidebar extends Component {
 							<li><Link className='nav-link-Link' to="/viewCurrentActiveUsers">View Active Users</Link></li>
 						</ul>
 					<li className="nav-item " style={{borderRadius: '5px', padding:'0px'}}>
-						<GoogleLogoutButton/>
 					</li>
 				</ul>
 			)
@@ -106,7 +104,6 @@ class Sidebar extends Component {
 						</a>
 					</li>
 					<li className="nav-item " style={{borderRadius: '5px', padding:'0px'}}>
-						<GoogleLogoutButton/>
 					</li>
 				</ul>
 			)
