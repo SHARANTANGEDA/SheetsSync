@@ -10,15 +10,16 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate
 public interface SheetsInfoDao {
 
     @SqlUpdate("create table if not exists SheetsInfo (id integer primary key, spreadsheetid varchar(150) not " +
-            "null, sheetname varchar(150) not null, cols integer not null,state varchar(50) not null," +
-            " structured varchar(50) not null, columnnames varchar (500), columntypes varchar(500))")
+            "null, sheetname varchar(150) not null, cols integer not null, hasLabel varchar(50) not null" +
+            ", state varchar(50) not null, structured varchar(50) not null, columnnames varchar (500), columntypes varchar(500))")
     fun createSheetsInfoTable()
 
-    @SqlUpdate("insert into SheetsInfo (spreadsheetid, sheetname, cols, state, structured, columnNames, columntypes) " +
-            "values (:spreadsheetid, :sheetname, :cols, :state, :structured, :columnNames, :columnTypes)")
+    @SqlUpdate("insert into SheetsInfo (spreadsheetid, sheetname,cols, haslabel, state, structured, columnNames, columntypes) " +
+            "values (:spreadsheetid, :sheetname, :cols, :haslabel, :state, :structured, :columnNames, :columnTypes)")
     fun insert(@Bind("spreadsheetid") spreadsheetid:String, @Bind("sheetname")sheetname:String,
-               @Bind("cols") cols: Int, @Bind("state") state: String,
-               @Bind("structured") structured: String, @Bind("columnNames") columnNames: String, @Bind("columnTypes") columnTypes: String)
+               @Bind("cols") cols: Int, @Bind("haslabel") haslabel: String, @Bind("state") state: String,
+               @Bind("structured") structured: String, @Bind("columnNames") columnNames: String,
+               @Bind("columnTypes") columnTypes: String)
 
     @SqlUpdate("update  SheetsInfo set state = :state where spreadsheetid=:spreadsheetid and sheetname=:sheetname")
     fun updateState(@Bind("spreadsheetid") spreadsheetid:String, @Bind("sheetname")sheetname:String,
@@ -27,14 +28,15 @@ public interface SheetsInfoDao {
     @SqlQuery("select id from SheetsInfo where spreadsheetid = :spreadsheetid and sheetname = :sheetname")
     fun checkExistence(@Bind("spreadsheetid") spreadsheetid: String, @Bind("sheetname")sheetname: String): String?
 
-    @SqlQuery("select id, spreadsheetid, sheetname, cols, state, structured, columnnames, columntypes from SheetsInfo " +
+    @SqlQuery("select id, spreadsheetid, sheetname, cols, haslabel, state, structured, columnnames, columntypes from SheetsInfo " +
             "where spreadsheetid = :spreadsheetid and sheetname = :sheetname")
     fun getInfo(@Bind("spreadsheetid") spreadsheetid: String, @Bind("sheetname")sheetname: String): SheetsInfo
 
     @SqlUpdate("delete from SheetsInfo where spreadsheetid = :spreadsheetid and sheetname = :sheetname")
     fun remove(@Bind("spreadsheetid") spreadsheetid: String, @Bind("sheetname")sheetname: String)
 
-
+    @SqlQuery("select * from SheetsInfo where state= :state and structured= :structured")
+    fun getActiveSheets(@Bind("state") state: String, @Bind("structured") structured: String): List<SheetsInfo>?
 }
 
 
@@ -52,8 +54,9 @@ class SheetsInfoService {
         return 1
     }
 
-    fun insert(spreadsheetid:String, sheetname:String, cols: Int, state: String, structured: String,columnNames: String, columnTypes: String): Int {
-        sheetsInfoDao.insert(spreadsheetid, sheetname, cols, state, structured, columnNames, columnTypes)
+    fun insert(spreadsheetid:String, sheetname:String, cols: Int, hasLabel: String, state: String, structured: String,
+               columnNames: String, columnTypes: String): Int {
+        sheetsInfoDao.insert(spreadsheetid, sheetname, cols, hasLabel, state, structured, columnNames, columnTypes)
         println("Inserted Data")
         return 1
     }
@@ -73,6 +76,10 @@ class SheetsInfoService {
     fun remove(spreadsheetid: String, sheetname: String): Int {
         sheetsInfoDao.remove(spreadsheetid, sheetname)
         return 1
+    }
+
+    fun getActiveSheets(state: String, structured: String): List<SheetsInfo>? {
+        return sheetsInfoDao.getActiveSheets(state, structured)
     }
 
 }

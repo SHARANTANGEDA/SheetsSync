@@ -4,7 +4,10 @@ import com.udaan.sheets.core.BackgroundTask
 import com.udaan.sheets.core.GoogleSheet
 import com.udaan.sheets.db.SheetTableService
 import com.udaan.sheets.db.SheetsInfoService
+import com.udaan.sheets.models.SheetsInfo
 import io.dropwizard.setup.Environment
+import org.jdbi.v3.core.statement.UnableToCreateStatementException
+import org.sqlite.SQLiteException
 import javax.ws.rs.*
 import javax.ws.rs.core.Form
 import javax.ws.rs.core.MediaType
@@ -57,7 +60,7 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
             val sheets = GoogleSheet()
             val sheetData = sheets.getSpreadSheetRecords(spreadSheetId, range)
             if (sheetsInfoService.checkExistence(spreadSheetId, range) == null) {
-                val ins = sheetsInfoService.insert(spreadSheetId, range, this.columnNames.size + 1,"init",
+                val ins = sheetsInfoService.insert(spreadSheetId, range, this.columnNames.size + 1,hasLabel.toString(), "init",
                     structured.toString(), columnNames.toString(), columnTypes.toString())
                 println("After Insert: $ins")
                 val primKey = sheetsInfoService.checkExistence(spreadSheetId, range)
@@ -92,6 +95,7 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
         val backgroundTask = map.computeIfPresent(id) { _, backgroundTask -> backgroundTask }
         if (backgroundTask != null) {
             backgroundTask.stop()
+            sheetsInfoService.updateState(backgroundTask.getDetails().first, backgroundTask.getDetails().second, "init")
             map.remove(id)
             Response.status(200).entity("Success").build()
         }else {
@@ -111,6 +115,7 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
                 str.append(",")
             }
         }
+        println("DET:${str.toString()}")
         sheetTableService.createSheetsInfoTable("table$tableName", str.toString())
         var newSheet: List<List<String>> = sheetData as List<List<String>>
         if(hasLabel) {
@@ -134,12 +139,29 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
         environment.lifecycle().manage(periodicTask)
         periodicTask.start()
     }
-
-
-
-
-
     private fun syncTable(tableName: String, hasLabel: Boolean) {
+
+    }
+
+    fun startAllStructuredTasks() {
+        try {
+            val sheetsInfoList = sheetsInfoService.getActiveSheets("run", "true")
+            if (sheetsInfoList!=null) {
+                for (sheetInfo: SheetsInfo in sheetsInfoList) {
+                    val periodicTask = BackgroundTask(sheetsInfoService,
+                        sheetTableService, sheetInfo.spreadsheetid, sheetInfo.sheetname,
+                        sheetInfo.hasLabel=="true", "table${sheetInfo.id}")
+                    map["table${sheetInfo.id}"] = periodicTask
+                    periodicTask.start()
+                }
+            }else {
+                println("No Service is expected to be started")
+            }
+        }catch (e: UnableToCreateStatementException ) {
+            println("No Sheet is set yet, not starting anything")
+        }catch (e: SQLiteException ) {
+            println("No Sheet is set yet")
+        }
 
     }
 

@@ -16,6 +16,7 @@ import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import org.eclipse.jetty.servlets.CrossOriginFilter
 import org.jdbi.v3.core.Jdbi
+import org.sqlite.SQLiteException
 import java.util.*
 import javax.servlet.DispatcherType
 
@@ -43,11 +44,13 @@ class SheetsSyncApplication : Application<SheetsSyncConfiguration>() {
         environment.lifecycle().addServerLifecycleListener(ServerLifecycleListener {
             println("I work")
         })
-        environment.jersey().register(SheetSync(SheetsInfoService(sheetsInfoDao), SheetTableService(sheetTabledao), environment))
+        val sheetSync = SheetSync(SheetsInfoService(sheetsInfoDao), SheetTableService(sheetTabledao), environment)
+        environment.jersey().register(sheetSync)
         environment.lifecycle().manage(object : Managed {
             @Throws(Exception::class)
             override fun start() {
-                println("Started YESSS")
+                println("Trying to Auto start scheduled tasks")
+                sheetSync.startAllStructuredTasks()
             }
 
             @Throws(Exception::class)

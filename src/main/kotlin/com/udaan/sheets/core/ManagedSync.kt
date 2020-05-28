@@ -9,7 +9,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class BackgroundTask(sheetsInfoService : SheetsInfoService, sheetTableService: SheetTableService,
-                     spreadSheetId: String, range:String, hasLabel:Boolean, tableName: String) : Managed {
+                     private val spreadSheetId: String,private val range:String, hasLabel:Boolean, tableName: String) : Managed {
     private val mainRunner = Executors.newSingleThreadScheduledExecutor(
         ThreadFactoryBuilder().setDaemon(true).setNameFormat(tableName).build()
     )
@@ -20,6 +20,7 @@ class BackgroundTask(sheetsInfoService : SheetsInfoService, sheetTableService: S
 
     //@Inject
     private val period: Long = 30
+
 
     private val scheduledTask:SchedulerTask = SchedulerTask(sheetsInfoService, sheetTableService, spreadSheetId,
         range, hasLabel)
@@ -33,5 +34,9 @@ class BackgroundTask(sheetsInfoService : SheetsInfoService, sheetTableService: S
     override fun stop() {
         println("Shutting Down")
         mainRunner.shutdown()
+    }
+
+    fun getDetails() :Pair<String, String> {
+        return Pair(spreadSheetId, range)
     }
 }

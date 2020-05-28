@@ -1,6 +1,5 @@
 package com.udaan.sheets.models
 
-import com.google.api.services.sheets.v4.model.Spreadsheet
 import org.hibernate.validator.constraints.Length
 import org.jdbi.v3.core.mapper.RowMapper
 import org.jdbi.v3.core.statement.StatementContext
@@ -9,8 +8,9 @@ import java.sql.SQLException
 import javax.validation.constraints.NotBlank
 
 
-class SheetsInfo(id: Int, spreadsheetid: String, sheetname: String, cols: Int, state: String, structured: String,
-                 columnNames: String, columnTypes: String) {
+class SheetsInfo(
+    id: Int, spreadsheetid: String, sheetname: String, cols: Int, hasLabel: String, state: String, structured: String,
+    columnNames: String, columnTypes: String) {
 
 //    constructor() {}
     val id:Int = id
@@ -29,6 +29,10 @@ class SheetsInfo(id: Int, spreadsheetid: String, sheetname: String, cols: Int, s
     @NotBlank
     @Length(min = 1, max = 50)
     val state: String = state
+
+    @NotBlank
+    @Length(min = 1, max = 50)
+    val hasLabel: String = hasLabel
 
     @NotBlank
     @Length(min = 1, max = 50)
@@ -53,6 +57,7 @@ class SheetsInfoMapper() : RowMapper<SheetsInfo> {
             resultSet.getString("spreadsheetid"),
             resultSet.getString("sheetname"),
             resultSet.getInt("cols"),
+            resultSet.getString("haslabel"),
             resultSet.getString("state"),
             resultSet.getString("structured"),
             resultSet.getString("columnnames"),

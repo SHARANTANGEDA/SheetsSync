@@ -34,13 +34,13 @@ class SheetTableService {
     }
 
     fun createSheetsInfoTable(tableName: String, columns: String): Int {
-        println("Created Table")
+        println("Created Table, $columns")
         sheetsTableDao.createSheetsInfoTable(tableName, columns)
         return 1
     }
 
     fun updateTable(tableName: String, columns: String): Int {
-        println("Update Table")
+        println("Update Table, $columns")
         sheetsTableDao.deleteTable(tableName)
         sheetsTableDao.createSheetsInfoTable(tableName, columns)
         return 1
