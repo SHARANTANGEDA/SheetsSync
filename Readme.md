@@ -26,6 +26,7 @@ withLabel: true
 structured: true
 ```
 6. You can also use un-structured sync as follows
+_In this case rest of the work is taken care by Application itself, but is not as optimizable as structured_
 ```
 spreadSheetLink: https://docs.google.com/spreadsheets/d/1vNgROdBY1fq2vf_k5xRaN0SXG8_bMl4gJEsKAsRzPek/edit#gid=0
 sheetName: Sheet1
