@@ -2,6 +2,8 @@
 
 #### _Application is still in development_
 #### _Backend Service has been Implemented_
+#### _A Glimpse of UI_
+![Image of UI](home.png)
 ### Stack Used
 1. Kotlin with DropWizard Framework
 2. SQLite3 Database
@@ -37,4 +39,3 @@ structured: false
 8. Note that above is just a format, you may have to change them based on your credentials
 
 #### _Now this might look tedious but once frontend is done users just have to enter the names of columns and choose type from a neat dropdown menu_
-![Image of UI](home.png)
