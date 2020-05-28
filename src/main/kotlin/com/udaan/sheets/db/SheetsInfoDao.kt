@@ -7,7 +7,7 @@ import org.jdbi.v3.sqlobject.statement.SqlQuery
 import org.jdbi.v3.sqlobject.statement.SqlUpdate
 
 @RegisterRowMapper(SheetsInfoMapper::class)
-public interface SheetsInfoDao {
+interface SheetsInfoDao {
 
     @SqlUpdate("create table if not exists SheetsInfo (id integer primary key, spreadsheetid varchar(150) not " +
             "null, sheetname varchar(150) not null, cols integer not null, hasLabel varchar(50) not null" +
@@ -35,8 +35,12 @@ public interface SheetsInfoDao {
     @SqlUpdate("delete from SheetsInfo where spreadsheetid = :spreadsheetid and sheetname = :sheetname")
     fun remove(@Bind("spreadsheetid") spreadsheetid: String, @Bind("sheetname")sheetname: String)
 
-    @SqlQuery("select * from SheetsInfo where state= :state and structured= :structured")
-    fun getActiveSheets(@Bind("state") state: String, @Bind("structured") structured: String): List<SheetsInfo>?
+    @SqlQuery("select * from SheetsInfo where state= :state")
+    fun getActiveSheets(@Bind("state") state: String): List<SheetsInfo>?
+
+    @SqlQuery("select * from SheetsInfo where id= :id")
+    fun getInfoById(@Bind("id") id: Int): SheetsInfo?
+
 }
 
 
@@ -78,8 +82,12 @@ class SheetsInfoService {
         return 1
     }
 
-    fun getActiveSheets(state: String, structured: String): List<SheetsInfo>? {
-        return sheetsInfoDao.getActiveSheets(state, structured)
+    fun getActiveSheets(state: String): List<SheetsInfo>? {
+        return sheetsInfoDao.getActiveSheets(state)
+    }
+
+    fun getInfoById(id: Int): SheetsInfo? {
+        return sheetsInfoDao.getInfoById(id)
     }
 
 }

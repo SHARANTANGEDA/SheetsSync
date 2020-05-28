@@ -50,7 +50,7 @@ class SheetsSyncApplication : Application<SheetsSyncConfiguration>() {
             @Throws(Exception::class)
             override fun start() {
                 println("Trying to Auto start scheduled tasks")
-                sheetSync.startAllStructuredTasks()
+                sheetSync.startAllTasks()
             }
 
             @Throws(Exception::class)
