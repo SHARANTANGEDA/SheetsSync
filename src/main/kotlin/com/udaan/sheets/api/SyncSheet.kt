@@ -15,17 +15,17 @@ import javax.ws.rs.core.Response
 
 
 @Path("/")
-class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTableService, environment: Environment) {
+class SheetSync(
+    private var sheetsInfoService: SheetsInfoService, private var sheetTableService: SheetTableService,
+    private val environment: Environment
+) {
     private lateinit var spreadSheetLink: String
     private lateinit var range: String
     private lateinit var spreadSheetId: String
-    private var sheetsInfoService: SheetsInfoService = sheetsInfoService
-    private var sheetTableService: SheetTableService = sheetTableService
-    private val environment: Environment = environment
     private lateinit var columnNames: List<String>
     private lateinit var columnTypes: List<String>
     private var hasLabel: Boolean = true
-    private var structured: Boolean = true
+    private var structured: Boolean = false
     private var map: MutableMap<String, BackgroundTask> = mutableMapOf()
 
     @Path("/enter")
@@ -37,7 +37,7 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
         spreadSheetLink = formMap["spreadSheetLink"].toString()
         range = ((formMap["sheetName"]?.get(0) ?: formMap["sheetName"]) as String)
         this.hasLabel = ((formMap["withLabel"]?.get(0) ?: formMap["withLabel"]) as String) == "true"
-        this.structured = ((formMap["structured"]?.get(0) ?: formMap["structured"]) as String) == "true"
+//        this.structured = ((formMap["structured"]?.get(0) ?: formMap["structured"]) as String) == "true"
         if (structured) {
             val columnNames = ((formMap["columns"]?.get(0) ?: formMap["columns"]) as String)
             val columnTypes = ((formMap["types"]?.get(0) ?: formMap["types"]) as String)
@@ -63,16 +63,14 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
                 return Response.status(404).entity("No data found in the sheet").build()
             } else {
                 if (sheetsInfoService.checkExistence(spreadSheetId, range) == null) {
+                    val label = if (hasLabel) 1 else 0
                     if (structured) {
                         val ins = sheetsInfoService.insert(
-                            spreadSheetId, range, this.columnNames.size + 1, hasLabel.toString(), "init",
-                            structured.toString(), columnNames.toString(), columnTypes.toString()
-                        )
+                            spreadSheetId, range, this.columnNames.size + 1,label, 0,
+                            1)
                         println("After Insert: $ins")
                         val primKey = sheetsInfoService.checkExistence(spreadSheetId, range)
-                        if (sheetData != null) {
-                            syncStructuredTable(primKey.toString(), columnNames, columnTypes, hasLabel, sheetData)
-                        }
+                        syncStructuredTable(primKey.toString(), columnNames, columnTypes, hasLabel, sheetData)
                     } else {
                         var columnNumbers = 0
                         for (row: List<Any> in sheetData) {
@@ -81,10 +79,8 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
                             }
                         }
                         println("Column Numbers:$columnNumbers")
-                        val ins = sheetsInfoService.insert(
-                            spreadSheetId, range, columnNumbers + 1, hasLabel.toString(), "init",
-                            structured.toString(), "", ""
-                        )
+                        val ins = sheetsInfoService.insert(spreadSheetId, range, columnNumbers + 1,
+                            label, 0,0)
                         println("After Insert: $ins")
                         val primKey = sheetsInfoService.checkExistence(spreadSheetId, range)
                         syncUnStructuredTable(primKey.toString(), hasLabel, sheetData, columnNumbers)
@@ -109,7 +105,7 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
         val backgroundTask = map.computeIfPresent(id) { _, backgroundTask -> backgroundTask }
         if (backgroundTask != null) {
             backgroundTask.stop()
-            sheetsInfoService.updateState(backgroundTask.getDetails().first, backgroundTask.getDetails().second, "init")
+            sheetsInfoService.updateState(backgroundTask.getDetails().first, backgroundTask.getDetails().second, 0)
             map.remove(id)
             Response.status(200).entity("Success").build()
         } else {
@@ -123,11 +119,11 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
     fun restartSync(@PathParam("id") id: String) {
         val info = sheetsInfoService.getInfoById(id.toInt())
         if (info != null) {
-            sheetsInfoService.updateState(info.spreadsheetid, info.sheetname, "run")
+            sheetsInfoService.updateState(info.spreadsheetid, info.sheetname, 1)
             val periodicTask =
                 BackgroundTask(
                     sheetsInfoService, sheetTableService, info.spreadsheetid, info.sheetname,
-                    info.hasLabel == "true", "table$id", info.structured == "true"
+                    info.hasLabel, "table$id", info.structured
                 )
             map["table$id"] = periodicTask
             environment.lifecycle().manage(periodicTask)
@@ -139,13 +135,8 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
     }
 
 
-    private fun syncStructuredTable(
-        tableName: String,
-        columnNames: List<String>,
-        columnTypes: List<String>,
-        hasLabel: Boolean,
-        sheetData: List<List<Any>>
-    ) {
+    private fun syncStructuredTable(tableName: String, columnNames: List<String>, columnTypes: List<String>,
+                                    hasLabel: Boolean, sheetData: List<List<Any>>) {
         val str = StringBuilder()
         str.append("rowId integer primary key,")
         for ((colInd, columnName) in columnNames.withIndex()) {
@@ -166,32 +157,24 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
         val insertData = StringBuilder()
         for (row in newSheet) {
             insertData.append("(")
-            insertData.append(row.joinToString(separator = ",") { it -> "\"$it\"" })
+            insertData.append(row.joinToString(separator = ",")
+            { "\"${it.replace("\"","\'").replace("?","\'?\'")}\"" }) //.replace(",",";")
             insertData.append("),")
-        }
+    }
         sheetTableService.insert("table$tableName", colStr, insertData.toString().substring(0, insertData.length - 1))
-        sheetsInfoService.updateState(spreadSheetId, range, "run")
+        sheetsInfoService.updateState(spreadSheetId, range, 1)
+        val label = if (hasLabel) 1 else 0
+        val struct = if (structured) 1 else 0
         val periodicTask =
-            BackgroundTask(
-                sheetsInfoService,
-                sheetTableService,
-                spreadSheetId,
-                range,
-                hasLabel,
-                "table$tableName",
-                structured
-            )
+            BackgroundTask(sheetsInfoService, sheetTableService, spreadSheetId, range, label,
+                "table$tableName", struct)
         map["table$tableName"] = periodicTask
         environment.lifecycle().manage(periodicTask)
         periodicTask.start()
     }
 
-    private fun syncUnStructuredTable(
-        tableName: String,
-        hasLabel: Boolean,
-        sheetData: List<List<Any>>,
-        columnNumbers: Int
-    ) {
+    private fun syncUnStructuredTable(tableName: String, hasLabel: Boolean, sheetData: List<List<Any>>,
+                                      columnNumbers: Int) {
         val str = StringBuilder()
         val columnNames: MutableList<String> = mutableListOf()
         str.append("rowId integer primary key,")
@@ -199,7 +182,7 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
             columnNames.add("col$i")
             str.append("col$i")
             str.append(" ")
-            str.append("varchar(300)")
+            str.append("text")
             if (i != columnNumbers) {
                 str.append(",")
             }
@@ -213,7 +196,8 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
         for (row in newSheet) {
             insertData.append("(")
             if (row.isNotEmpty()) {
-                insertData.append(row.joinToString(separator = ",") { it -> "\"$it\"" })
+                insertData.append(row.joinToString(separator = ",")
+                { "\"${it.replace("\"","\'").replace("?","\'?\'")}\"" })
 
             }
             if (row.size < columnNumbers) {
@@ -235,17 +219,12 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
             columnNames.joinToString(","),
             insertData.toString().substring(0, insertData.length - 1)
         )
-        sheetsInfoService.updateState(spreadSheetId, range, "run")
+        sheetsInfoService.updateState(spreadSheetId, range, 1)
+        val label = if (hasLabel) 1 else 0
+        val struct = if (structured) 1 else 0
         val periodicTask =
-            BackgroundTask(
-                sheetsInfoService,
-                sheetTableService,
-                spreadSheetId,
-                range,
-                hasLabel,
-                "table$tableName",
-                structured
-            )
+            BackgroundTask(sheetsInfoService, sheetTableService, spreadSheetId, range, label,
+                "table$tableName", struct)
         map["table$tableName"] = periodicTask
         environment.lifecycle().manage(periodicTask)
         periodicTask.start()
@@ -253,14 +232,13 @@ class SheetSync(sheetsInfoService: SheetsInfoService, sheetTableService: SheetTa
 
     fun startAllTasks() {
         try {
-            val sheetsInfoList = sheetsInfoService.getActiveSheets("run")
+            val sheetsInfoList = sheetsInfoService.getActiveSheets(1)
             if (sheetsInfoList != null) {
                 for (sheetInfo: SheetsInfo in sheetsInfoList) {
                     val periodicTask = BackgroundTask(
                         sheetsInfoService,
                         sheetTableService, sheetInfo.spreadsheetid, sheetInfo.sheetname,
-                        sheetInfo.hasLabel == "true", "table${sheetInfo.id}", sheetInfo.structured == "true"
-                    )
+                        sheetInfo.hasLabel, "table${sheetInfo.id}", sheetInfo.structured)
                     map["table${sheetInfo.id}"] = periodicTask
                     periodicTask.start()
                 }
@@ -294,49 +272,50 @@ class SchedulerTask(
     private val sheetTableService: SheetTableService,
     private val spreadSheetId: String,
     private val sheetName: String,
-    private val hasLabel: Boolean,
-    private val structured: Boolean
+    private val hasLabel: Int,
+    private val structured: Int
 ) : Runnable {
 
-    fun syncTaskStructured() {
-        println("Running again")
-        val sheetInfo = sheetsInfoService.getInfo(spreadSheetId, sheetName)
-        val columnNames = sheetInfo.columnnames.substring(1, sheetInfo.columnnames.length - 1).split(',')
-        val columnTypes = sheetInfo.columntypes.substring(1, sheetInfo.columntypes.length - 1).split(',')
-        val primKey = sheetInfo.id
-        val sheets = GoogleSheet()
-        val sheetData = sheets.getSpreadSheetRecords(spreadSheetId, sheetName)
-        val str = StringBuilder()
-        for ((colInd, columnName) in columnNames.withIndex()) {
-            str.append(columnName)
-            str.append(" ")
-            str.append(columnTypes[colInd])
-            if (colInd != columnNames.size - 1) {
-                str.append(",")
-            }
-        }
-        sheetTableService.updateTable("table$primKey", str.toString())
-        var newSheet: List<List<String>> = sheetData as List<List<String>>
-        if (hasLabel) {
-            newSheet = sheetData.subList(1, sheetData.size)
-        }
-        val colStr = columnNames.joinToString(separator = ",")
-        val insertData = StringBuilder()
-        for (row in newSheet) {
-            insertData.append("(")
-            insertData.append(row.joinToString(separator = ",") { it -> "\"$it\"" })
-            insertData.append("),")
-        }
-        sheetTableService.insert("table$primKey", colStr, insertData.toString().substring(0, insertData.length - 1))
-    }
+/*    fun syncTaskStructured() {
+//        println("Running again")
+//        val sheetInfo = sheetsInfoService.getInfo(spreadSheetId, sheetName)
+//        val columnNames = sheetInfo.columnnames.substring(1, sheetInfo.columnnames.length - 1).split(',')
+//        val columnTypes = sheetInfo.columntypes.substring(1, sheetInfo.columntypes.length - 1).split(',')
+//        val primKey = sheetInfo.id
+//        val sheets = GoogleSheet()
+//        val sheetData = sheets.getSpreadSheetRecords(spreadSheetId, sheetName)
+//        val str = StringBuilder()
+//        for ((colInd, columnName) in columnNames.withIndex()) {
+//            str.append(columnName)
+//            str.append(" ")
+//            str.append(columnTypes[colInd])
+//            if (colInd != columnNames.size - 1) {
+//                str.append(",")
+//            }
+//        }
+//        sheetTableService.updateTable("table$primKey", str.toString())
+//        var newSheet: List<List<String>> = sheetData as List<List<String>>
+//        if (hasLabel) {
+//            newSheet = sheetData.subList(1, sheetData.size)
+//        }
+//        val colStr = columnNames.joinToString(separator = ",")
+//        val insertData = StringBuilder()
+//        for (row in newSheet) {
+//            insertData.append("(")
+//            insertData.append(row.joinToString(separator = ",") { it -> "\"$it\"" })
+//            insertData.append("),")
+//        }
+//        sheetTableService.insert("table$primKey", colStr, insertData.toString().substring(0, insertData.length - 1))
+//    }
+ */
 
-    fun syncTaskUnStructured() {
+    private fun syncTaskUnStructured() {
         println("Running again")
         val sheetInfo = sheetsInfoService.getInfo(spreadSheetId, sheetName)
         val primKey = sheetInfo.id
         val sheets = GoogleSheet()
         val sheetData = sheets.getSpreadSheetRecords(spreadSheetId, sheetName)
-        var columnNumbers: Int = 0
+        var columnNumbers = 0
         if (sheetData != null) {
             for (row: List<Any> in sheetData) {
                 if (row.size > columnNumbers) {
@@ -350,14 +329,14 @@ class SchedulerTask(
                 columnNames.add("col$i")
                 str.append("col$i")
                 str.append(" ")
-                str.append("varchar(300)")
+                str.append("text")
                 if (i != columnNumbers) {
                     str.append(",")
                 }
             }
             sheetTableService.updateTable("table$primKey", str.toString())
             var newSheet: List<List<String>> = sheetData as List<List<String>>
-            if (hasLabel) {
+            if (hasLabel==1) {
                 newSheet = sheetData.subList(1, sheetData.size)
             }
             val colStr = columnNames.joinToString(separator = ",")
@@ -365,7 +344,8 @@ class SchedulerTask(
             for (row in newSheet) {
                 insertData.append("(")
                 if (row.isNotEmpty()) {
-                    insertData.append(row.joinToString(separator = ",") { it -> "\"$it\"" })
+                    insertData.append(row.joinToString(separator = ",") {
+                        "\"${it.replace("\"","\'").replace("?","\'?\'")}\"" })
                 }
                 if (row.size < columnNumbers) {
                     if (row.isNotEmpty()) {
@@ -389,11 +369,13 @@ class SchedulerTask(
     override fun run() {
         try {
             println("In run")
-            if (structured) {
-                syncTaskStructured()
-            } else {
+            if (structured==0) {
                 syncTaskUnStructured()
+
             }
+//            else {
+//                syncTaskStructured()
+//            }
         } catch (e: Exception) {
             e.printStackTrace()
             println("ERROR - unexpected exception" + e.message)

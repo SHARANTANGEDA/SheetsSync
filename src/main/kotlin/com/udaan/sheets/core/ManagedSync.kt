@@ -9,7 +9,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class BackgroundTask(sheetsInfoService : SheetsInfoService, sheetTableService: SheetTableService,
-                     private val spreadSheetId: String,private val range:String, hasLabel:Boolean, tableName: String, structured: Boolean) : Managed {
+                     private val spreadSheetId: String,private val range:String, hasLabel:Int, tableName: String, structured: Int) : Managed {
     private val mainRunner = Executors.newSingleThreadScheduledExecutor(
         ThreadFactoryBuilder().setDaemon(true).setNameFormat(tableName).build()
     )

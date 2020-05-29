@@ -9,8 +9,7 @@ import javax.validation.constraints.NotBlank
 
 
 class SheetsInfo(
-    id: Int, spreadsheetid: String, sheetname: String, cols: Int, hasLabel: String, state: String, structured: String,
-    columnNames: String, columnTypes: String) {
+    id: Int, spreadsheetid: String, sheetname: String, cols: Int, hasLabel: Int, state: Int, structured: Int) {
 
 //    constructor() {}
     val id:Int = id
@@ -27,24 +26,21 @@ class SheetsInfo(
     val cols: Int = cols
 
     @NotBlank
-    @Length(min = 1, max = 50)
-    val state: String = state
+    val state: Int = state
 
     @NotBlank
-    @Length(min = 1, max = 50)
-    val hasLabel: String = hasLabel
+    val hasLabel: Int = hasLabel
 
     @NotBlank
-    @Length(min = 1, max = 50)
-    val structured: String = structured
+    val structured: Int = structured
 
-    @NotBlank
-    @Length(min = 3, max = 500)
-    val columnnames : String = columnNames
-
-    @NotBlank
-    @Length(min = 3, max = 500)
-    val columntypes : String = columnTypes
+//    @NotBlank
+//    @Length(min = 3, max = 500)
+//    val columnnames : String = columnNames
+//
+//    @NotBlank
+//    @Length(min = 3, max = 500)
+//    val columntypes : String = columnTypes
 }
 
 
@@ -57,11 +53,9 @@ class SheetsInfoMapper() : RowMapper<SheetsInfo> {
             resultSet.getString("spreadsheetid"),
             resultSet.getString("sheetname"),
             resultSet.getInt("cols"),
-            resultSet.getString("haslabel"),
-            resultSet.getString("state"),
-            resultSet.getString("structured"),
-            resultSet.getString("columnnames"),
-            resultSet.getString("columntypes")
+            resultSet.getInt("haslabel"),
+            resultSet.getInt("state"),
+            resultSet.getInt("structured")
         )
     }
 }

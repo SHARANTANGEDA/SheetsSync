@@ -9,26 +9,25 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate
 @RegisterRowMapper(SheetsInfoMapper::class)
 interface SheetsInfoDao {
 
-    @SqlUpdate("create table if not exists SheetsInfo (id integer primary key, spreadsheetid varchar(150) not " +
-            "null, sheetname varchar(150) not null, cols integer not null, hasLabel varchar(50) not null" +
-            ", state varchar(50) not null, structured varchar(50) not null, columnnames varchar (500), columntypes varchar(500))")
+    @SqlUpdate("create table if not exists SheetsInfo (id integer primary key, spreadsheetid TEXT not " +
+            "null, sheetname TEXT not null, cols integer not null, hasLabel integer not null" +
+            ", state integer not null, structured integer not null)")
     fun createSheetsInfoTable()
-
-    @SqlUpdate("insert into SheetsInfo (spreadsheetid, sheetname,cols, haslabel, state, structured, columnNames, columntypes) " +
-            "values (:spreadsheetid, :sheetname, :cols, :haslabel, :state, :structured, :columnNames, :columnTypes)")
+//, columnnames text, columntypes text
+    @SqlUpdate("insert into SheetsInfo (spreadsheetid, sheetname,cols, haslabel, state, structured) " +
+            "values (:spreadsheetid, :sheetname, :cols, :haslabel, :state, :structured)")
     fun insert(@Bind("spreadsheetid") spreadsheetid:String, @Bind("sheetname")sheetname:String,
-               @Bind("cols") cols: Int, @Bind("haslabel") haslabel: String, @Bind("state") state: String,
-               @Bind("structured") structured: String, @Bind("columnNames") columnNames: String,
-               @Bind("columnTypes") columnTypes: String)
+               @Bind("cols") cols: Int, @Bind("haslabel") haslabel: Int, @Bind("state") state: Int,
+               @Bind("structured") structured: Int)
 
     @SqlUpdate("update  SheetsInfo set state = :state where spreadsheetid=:spreadsheetid and sheetname=:sheetname")
     fun updateState(@Bind("spreadsheetid") spreadsheetid:String, @Bind("sheetname")sheetname:String,
-                    @Bind("state") state: String)
+                    @Bind("state") state: Int)
 
     @SqlQuery("select id from SheetsInfo where spreadsheetid = :spreadsheetid and sheetname = :sheetname")
     fun checkExistence(@Bind("spreadsheetid") spreadsheetid: String, @Bind("sheetname")sheetname: String): String?
 
-    @SqlQuery("select id, spreadsheetid, sheetname, cols, haslabel, state, structured, columnnames, columntypes from SheetsInfo " +
+    @SqlQuery("select id, spreadsheetid, sheetname, cols, haslabel, state, structured from SheetsInfo " +
             "where spreadsheetid = :spreadsheetid and sheetname = :sheetname")
     fun getInfo(@Bind("spreadsheetid") spreadsheetid: String, @Bind("sheetname")sheetname: String): SheetsInfo
 
@@ -36,7 +35,7 @@ interface SheetsInfoDao {
     fun remove(@Bind("spreadsheetid") spreadsheetid: String, @Bind("sheetname")sheetname: String)
 
     @SqlQuery("select * from SheetsInfo where state= :state")
-    fun getActiveSheets(@Bind("state") state: String): List<SheetsInfo>?
+    fun getActiveSheets(@Bind("state") state: Int): List<SheetsInfo>?
 
     @SqlQuery("select * from SheetsInfo where id= :id")
     fun getInfoById(@Bind("id") id: Int): SheetsInfo?
@@ -58,13 +57,12 @@ class SheetsInfoService {
         return 1
     }
 
-    fun insert(spreadsheetid:String, sheetname:String, cols: Int, hasLabel: String, state: String, structured: String,
-               columnNames: String, columnTypes: String): Int {
-        sheetsInfoDao.insert(spreadsheetid, sheetname, cols, hasLabel, state, structured, columnNames, columnTypes)
+    fun insert(spreadsheetid:String, sheetname:String, cols: Int, hasLabel: Int, state: Int, structured: Int): Int {
+        sheetsInfoDao.insert(spreadsheetid, sheetname, cols, hasLabel, state, structured)
         println("Inserted Data")
         return 1
     }
-    fun updateState(spreadsheetid:String, sheetname:String, state: String): Int {
+    fun updateState(spreadsheetid:String, sheetname:String, state: Int): Int {
         sheetsInfoDao.updateState(spreadsheetid, sheetname, state)
         println("Inserted Data")
         return 1
@@ -82,7 +80,7 @@ class SheetsInfoService {
         return 1
     }
 
-    fun getActiveSheets(state: String): List<SheetsInfo>? {
+    fun getActiveSheets(state: Int): List<SheetsInfo>? {
         return sheetsInfoDao.getActiveSheets(state)
     }
 
