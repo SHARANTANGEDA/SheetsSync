@@ -4,6 +4,12 @@ img {
   width: 100%;
 }
 
+* {
+  font-family: Roboto, serif;
+}
+button {
+  font-family: Roboto, serif;
+}
 div {
   white-space: pre-wrap;
 }
@@ -56,7 +62,7 @@ hr.horizontalLine {
 
 .landing {
   position: relative;
-  background: url('./img/background.jpg') no-repeat;
+  background: url('./img/background.jpg') repeat-y;
   background-size: cover;
   background-position: center;
   height: 100vh;

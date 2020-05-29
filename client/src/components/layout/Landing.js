@@ -1,12 +1,10 @@
 import React, {Component} from 'react'
 import {PropTypes} from 'prop-types'
 import {connect} from 'react-redux'
-import {loginUser} from '../../actions/authActions'
 import TextFieldGroup from "../common/TextFieldGroup";
 import {CopyToClipboard} from 'react-copy-to-clipboard';
 import Switch from "react-switch"
-import classnames from "classnames";
-import Select from "react-select";
+import {addSheet} from "../../actions/homeActions";
 
 
 class Landing extends Component {
@@ -67,13 +65,27 @@ class Landing extends Component {
 
     onSubmit(e) {
         e.preventDefault();
-        const userData = {
-            spreadSheetLink: this.state.spreadSheetLink,
+        const data = {
             sheetName: this.state.sheetName,
-            withLabel: this.state.withLabel
-            // structured: this.state.structured
+            withLabel: this.state.withLabel.toString(),
+            spreadSheetLink: encodeURIComponent(this.state.spreadSheetLink)
         };
-        console.log({data: userData});
+        // structured: this.state.structured
+        console.log({data: data});
+        let flag = false
+        if (this.state.spreadSheetLink.length===0 || !this.state.spreadSheetLink.startsWith("https://docs.google.com/spreadsheets")) {
+            flag = true
+            this.state.errors.spreadSheetLink = "Please enter google spreadsheet link in given format"
+            this.setState({errors: this.state.errors})
+        }
+        if (this.state.sheetName.length===0) {
+            flag = true
+            this.state.errors.sheetName = "Please Enter SheetName"
+            this.setState({errors: this.state.errors})
+        }
+        if(!flag) {
+            this.props.addSheet(data)
+        }
         // if(this.state.structured) {
         //     this.setState({step1: true})
         // }
@@ -89,7 +101,90 @@ class Landing extends Component {
 
     render() {
         const {errors} = this.state;
-        let pageContent = null
+        console.log(errors)
+        let pageContent = (<div className="col-md-6">
+            <form noValidate onSubmit={this.onSubmit}>
+                <h6 className='d-flex justify-content-start'>Share your google sheet with following
+                    email:</h6>
+                <div className='row' style={{
+                    padding: '5px',
+                    borderStyle: 'solid',
+                    borderColor: 'white',
+                    borderRadius: '5px',
+                    margin: '5px'
+                }}>
+                    <CopyToClipboard text={"sheetssync@sheets-sync-277810.iam.gserviceaccount.com"}
+                                     onCopy={() => this.setState({copied: true})}>
+                                            <span style={{color: '#ffffff', margin: '5px'}}>sheetssync@sheets-sync-277810.iam.gserviceaccount.com
+                                            </span>
+                    </CopyToClipboard>
+                    <CopyToClipboard text={"sheetssync@sheets-sync-277810.iam.gserviceaccount.com"}
+                                     onCopy={() => this.setState({copied: true})}>
+                        <button style={{
+                            background: '#8d0000',
+                            borderStyle: 'none',
+                            borderRadius: '5px'
+                        }}>{this.state.copied ?
+                            "Copied!" : "Copy"}</button>
+                    </CopyToClipboard>
+                </div>
+                <hr/>
+
+                <h6 className='d-flex justify-content-start'>Enter Spreadsheet Link:</h6>
+                <TextFieldGroup placeholder="Ex: https://docs.google.com/spreadsheets..."
+                                error={errors.spreadSheetLink}
+                                type="text" onChange={this.changeHandler}
+                                value={this.state.spreadSheetLink}
+                                name="spreadSheetLink"
+                />
+                <h6 className='d-flex justify-content-start'>Enter Sheet Name:</h6>
+
+                <TextFieldGroup placeholder="Ex: Sheet1" error={errors.sheetName}
+                                type="text" onChange={this.changeHandler}
+                                value={this.state.sheetName} name="sheetName"
+                />
+                <div className='row d-flex justify-content-around'>
+                    <h6 style={{marginRight: '5px'}}>Does the First Row in the sheet contain
+                        Labels?</h6>
+                    <Switch width={75} height={30} handleDiameter={20}
+                            checkedIcon={<span
+                                style={{margin: '5px', fontWeight: 'bold'}}>Yes</span>}
+                            uncheckedIcon={<span
+                                style={{margin: '5px', fontWeight: 'bold'}}>No</span>}
+                            onChange={this.switchValue} checked={this.state.withLabel}/>
+                </div>
+                <hr/>
+                {/*<div className='row d-flex justify-content-between'>*/}
+                {/*    <h6 style={{marginRight: '5px'}}>Do you want to use Structured Data Sync*/}
+                {/*        <span*/}
+                {/*            style={{fontStyle: 'italic', fontWeight: 'bolder'}}>(Recommended)</span>?*/}
+                {/*    </h6>*/}
+                {/*    <Switch width={75} height={30} handleDiameter={20}*/}
+                {/*            checkedIcon={<span*/}
+                {/*                style={{margin: '5px', fontWeight: 'bold'}}>Yes</span>}*/}
+                {/*            uncheckedIcon={<span*/}
+                {/*                style={{margin: '5px', fontWeight: 'bold'}}>No</span>}*/}
+                {/*            onChange={this.switchValueStructure} checked={this.state.structured}/>*/}
+                {/*</div>*/}
+                <div className="col-md-12 d-flex justify-content-center text-center">
+                    <div className='col-md-6'>
+                        <button style={{
+                            maxWidth: '250px',
+                            background: '#8d0000',
+                            borderStyle: 'none',
+                            borderRadius: '8px',
+                            fontSize: '14pt'
+                        }}
+                                className="btn btn-info btn-block mt-4"
+                                onClick={this.onSubmit}>Start Syncing
+                        </button>
+                    </div>
+                </div>
+                <hr/>
+            </form>
+
+            <hr/>
+        </div>)
         /*if(this.state.step1) {
         //     pageContent = (
         //         <div>
@@ -126,7 +221,7 @@ class Landing extends Component {
             <div className="login landing " style={{maxHeight: '100%'}}>
                 <div className="dark-overlay">
                     <div className="container">
-                        <div className="row d-flex justify-content-center text-light">
+                        <div className="row  text-light">
                             <div className="col-md-12 text-center">
                                 <h1 className="display-3 mb-4"
                                     style={{color: 'white', fontFamily: 'roboto'}}>Google Spreadsheet Sync</h1>
@@ -136,92 +231,10 @@ class Landing extends Component {
                                 </p>
                                 <hr/>
                             </div>
-                            <div className="text-center">
-                                <form noValidate onSubmit={this.onSubmit}>
-                                    <h6 className='d-flex justify-content-start'>Share your google sheet with following
-                                        email:</h6>
-                                    <div className='row' style={{
-                                        padding: '5px',
-                                        borderStyle: 'solid',
-                                        borderColor: 'white',
-                                        borderRadius: '5px',
-                                        margin: '5px'
-                                    }}>
-                                        <CopyToClipboard text={"sheetssync@sheets-sync-277810.iam.gserviceaccount.com"}
-                                                         onCopy={() => this.setState({copied: true})}>
-                                            <span style={{color: '#ffffff', margin: '5px'}}>sheetssync@sheets-sync-277810.iam.gserviceaccount.com
-                                            </span>
-                                        </CopyToClipboard>
-                                        <CopyToClipboard text={"sheetssync@sheets-sync-277810.iam.gserviceaccount.com"}
-                                                         onCopy={() => this.setState({copied: true})}>
-                                            <button style={{
-                                                background: '#8d0000',
-                                                borderStyle: 'none',
-                                                fontFamily: 'roboto',
-                                                borderRadius: '5px'
-                                            }}>{this.state.copied ?
-                                                "Copied!" : "Copy"}</button>
-                                        </CopyToClipboard>
-                                    </div>
-                                    <hr/>
-
-                                    <h6 className='d-flex justify-content-start'>Enter Spreadsheet Link:</h6>
-                                    <TextFieldGroup placeholder="Ex: https://docs.google.com/spreadsheets..."
-                                                    error={errors.spreadSheetLink}
-                                                    type="text" onChange={this.changeHandler}
-                                                    value={this.state.spreadSheetLink}
-                                                    name="spreadSheetLink"
-                                    />
-                                    <h6 className='d-flex justify-content-start'>Enter Sheet Name:</h6>
-
-                                    <TextFieldGroup placeholder="Ex: Sheet1" error={errors.sheetName}
-                                                    type="text" onChange={this.changeHandler}
-                                                    value={this.state.sheetName} name="sheetName"
-                                    />
-                                    <div className='row d-flex justify-content-between'>
-                                        <h6 style={{marginRight: '5px'}}>Does the First Row in the sheet contain
-                                            Labels?</h6>
-                                        <Switch width={75} height={30} handleDiameter={20}
-                                                checkedIcon={<span
-                                                    style={{margin: '5px', fontWeight: 'bold'}}>Yes</span>}
-                                                uncheckedIcon={<span
-                                                    style={{margin: '5px', fontWeight: 'bold'}}>No</span>}
-                                                onChange={this.switchValue} checked={this.state.withLabel}/>
-                                    </div>
-                                    <hr/>
-                                    {/*<div className='row d-flex justify-content-between'>*/}
-                                    {/*    <h6 style={{marginRight: '5px'}}>Do you want to use Structured Data Sync*/}
-                                    {/*        <span*/}
-                                    {/*            style={{fontStyle: 'italic', fontWeight: 'bolder'}}>(Recommended)</span>?*/}
-                                    {/*    </h6>*/}
-                                    {/*    <Switch width={75} height={30} handleDiameter={20}*/}
-                                    {/*            checkedIcon={<span*/}
-                                    {/*                style={{margin: '5px', fontWeight: 'bold'}}>Yes</span>}*/}
-                                    {/*            uncheckedIcon={<span*/}
-                                    {/*                style={{margin: '5px', fontWeight: 'bold'}}>No</span>}*/}
-                                    {/*            onChange={this.switchValueStructure} checked={this.state.structured}/>*/}
-                                    {/*</div>*/}
-
-                                    <div className="col-md-12 d-flex justify-content-center text-center">
-                                        <div className='col-md-6'>
-                                            <button style={{
-                                                maxWidth: '250px',
-                                                background: '#8d0000',
-                                                borderStyle: 'none',
-                                                borderRadius: '8px',
-                                                fontFamily: 'roboto',
-                                                fontSize: '14pt'
-                                            }}
-                                                    className="btn btn-info btn-block mt-4"
-                                                    onClick={this.onSubmit}>Continue
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <hr/>
-                                </form>
-
-                                <hr/>
+                            <div className='col-md-12 d-flex justify-content-center text-center'>
+                                    {pageContent}
                             </div>
+
                         </div>
                     </div>
                 </div>
@@ -232,7 +245,7 @@ class Landing extends Component {
 
 Landing.propTypes = {
     auth: PropTypes.object.isRequired,
-    loginUser: PropTypes.func.isRequired,
+    addSheet: PropTypes.func.isRequired,
     errors: PropTypes.object.isRequired
 };
 
@@ -241,4 +254,4 @@ const mapStateToProps = state => ({
     errors: state.errors
 });
 
-export default connect(mapStateToProps, {loginUser})(Landing);
+export default connect(mapStateToProps, {addSheet})(Landing);

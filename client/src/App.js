@@ -6,56 +6,9 @@ import NavBar from './components/layout/NavBar'
 import Landing from './components/layout/Landing'
 import Home from './components/layout/Home'
 import {BrowserRouter as Router, Route, Switch} from 'react-router-dom'
-import URLSearchParams from "url-search-params";
 import Routes from './components/common/Routes/Routes'
 import Sidebar from "./components/layout/Sidebar";
-import {convertGoogleToken, googleLogoutAction, setCurrentUserGoogle} from "./actions/googleAuthActions";
-
-
-
-if (localStorage.getItem("google_access_token") &&localStorage.length > 0) {
-  const tokenExpirationTime = localStorage.getItem(
-    "google_access_token_expires_in"
-  );
-  // get the current unix epoch time in seconds
-  const currentTime = Math.round(new Date().getTime() / 1000);
-  const timeLeft = tokenExpirationTime - currentTime;
-  console.log("token time left =======>", timeLeft);
-  // check if the token is expired, if so log the user out
-  if (tokenExpirationTime && tokenExpirationTime - currentTime <= 0) {
-    console.log("TOKEN IS EXPIRED");
-    localStorage.removeItem("google_access_token_conv");
-    localStorage.removeItem("google_refresh_token_conv");
-    localStorage.removeItem("google_access_token_expires_in");
-    localStorage.removeItem("id");
-    localStorage.removeItem("role");
-    localStorage.removeItem("email");
-    store.dispatch(googleLogoutAction());
-    window.location.href = '/';
-  }else {
-    store.dispatch(setCurrentUserGoogle())
-  }
-  if (tokenExpirationTime && tokenExpirationTime - currentTime <= 1800) {
-    let searchParams = new URLSearchParams();
-    searchParams.set("grant_type", "refresh_token");
-    searchParams.set("refresh_token", localStorage.getItem("google_refresh_token"));
-    store.dispatch(convertGoogleToken());
-    //   fetch(`${url}/auth/token/`, {
-    //     method: "POST",
-    //     headers: {
-    //       Accept: "application/json",
-    //       "Content-Type": "application/x-www-form-urlencoded"
-    //     },
-    //     body: searchParams
-    //   })
-    //     .then(response => response.json())
-    //     .then(json => dispatch(convertGoogTokenSuccess(json)))
-    //     .then(() => next(action));
-    // } else {
-    //   return next(action);
-    // }
-  }
-}
+import ViewSheet from "./components/layout/ViewSheet";
 
 
 class App extends Component {
@@ -86,7 +39,8 @@ updateWindowDimensions() {
         <Switch>
         {/*<Route exact path="/home" component={Landing}/>*/}
           <Route exact path='/' component={Landing}/>
-          <Route exact path='/change' component={Home}/>
+          <Route exact path='/home' component={Home}/>
+          <Route exact path='/openSheet/:id/:cols' component={ViewSheet}/>
           {/*<Route exact path='/forgotPassword' component={ForgotPassword}/>*/}
           {/*<Route exact path='/register' component={Register}/>*/}
           <div className='wrapper' style={{width:this.state.width, height: this.state.height, overflow: 'scroll'}}>

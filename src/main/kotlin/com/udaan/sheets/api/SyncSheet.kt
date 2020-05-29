@@ -8,10 +8,10 @@ import com.udaan.sheets.models.SheetsInfo
 import io.dropwizard.setup.Environment
 import org.jdbi.v3.core.statement.UnableToCreateStatementException
 import org.sqlite.SQLiteException
+import java.net.URLDecoder
 import java.util.stream.Collectors
 import java.util.stream.IntStream
 import javax.ws.rs.*
-import javax.ws.rs.core.Form
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
@@ -31,27 +31,31 @@ class SheetSync(
     private var map: MutableMap<String, BackgroundTask> = mutableMapOf()
 
     @Path("/enter")
-    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @POST
-    fun getLink(form: Form): Response {
-        val formMap = form.asMap()
-        spreadSheetLink = formMap["spreadSheetLink"].toString()
-        range = ((formMap["sheetName"]?.get(0) ?: formMap["sheetName"]) as String)
-        this.hasLabel = ((formMap["withLabel"]?.get(0) ?: formMap["withLabel"]) as String) == "true"
+    fun getLink(form: SheetForm): Response {
+        val formMap = mapOf<String, String>()
+        println(form.sheetName)
+//        println(URLDecoder.decode(form.spreadSheetLink, "UTF-8"))
+        println(form.withLabel)
+        spreadSheetLink = URLDecoder.decode(form.spreadSheetLink, "UTF-8").toString()
+        println(spreadSheetLink)
+        range = form.sheetName.toString()
+        this.hasLabel = form.withLabel.toString() == "true"
 //        this.structured = ((formMap["structured"]?.get(0) ?: formMap["structured"]) as String) == "true"
-        if (structured) {
-            val columnNames = ((formMap["columns"]?.get(0) ?: formMap["columns"]) as String)
-            val columnTypes = ((formMap["types"]?.get(0) ?: formMap["types"]) as String)
-            val resTuple = parseColumns(columnNames, columnTypes)
-            this.columnNames = resTuple.first
-            this.columnTypes = resTuple.second
-            val modifiedColumnNames: MutableList<String> = this.columnNames as MutableList<String>
-            for ((idx, cell) in this.columnNames.withIndex()) {
-                modifiedColumnNames[idx] = (cell.replace("\\s".toRegex(), ""))
-            }
-            this.columnNames = modifiedColumnNames.toList()
-        }
+//        if (structured) {
+////            val columnNames = ((formMap["columns"]?.get(0) ?: formMap["columns"]) as String)
+////            val columnTypes = ((formMap["types"]?.get(0) ?: formMap["types"]) as String)
+//            val resTuple = parseColumns(columnNames, columnTypes)
+//            this.columnNames = resTuple.first
+//            this.columnTypes = resTuple.second
+//            val modifiedColumnNames: MutableList<String> = this.columnNames as MutableList<String>
+//            for ((idx, cell) in this.columnNames.withIndex()) {
+//                modifiedColumnNames[idx] = (cell.replace("\\s".toRegex(), ""))
+//            }
+//            this.columnNames = modifiedColumnNames.toList()
+//        }
         if (spreadSheetLink.isEmpty() || range.isEmpty()) {
             return Response.status(400).entity("Enter details again").build()
         } else {
@@ -104,11 +108,11 @@ class SheetSync(
     @Produces(MediaType.APPLICATION_JSON)
     @GET
     fun stopSync(@PathParam("id") id: String) {
-        val backgroundTask = map.computeIfPresent(id) { _, backgroundTask -> backgroundTask }
+        val backgroundTask = map.computeIfPresent("table$id") { _, backgroundTask -> backgroundTask }
         if (backgroundTask != null) {
             backgroundTask.stop()
             sheetsInfoService.updateState(backgroundTask.getDetails().first, backgroundTask.getDetails().second, 0)
-            map.remove(id)
+            map.remove("table$id")
             Response.status(200).entity("Success").build()
         } else {
             Response.status(404).entity("Job is not found, please check again").build()
@@ -143,11 +147,11 @@ class SheetSync(
         try {
             val colNo = cols.toInt()
             val data: MutableList<List<String>> = mutableListOf()
-            var list =sheetTableService.getData(id, "rowId")
+            var list =sheetTableService.getData("table$id", "rowId")
             data.add(list)
             println(list.size)
             for(i in 1 until colNo) {
-                list =sheetTableService.getData(id, "col$i")
+                list =sheetTableService.getData("table$id", "col$i")
                 data.add(list)
                 println(list.size)
             }
@@ -157,6 +161,20 @@ class SheetSync(
         }catch (e:Exception) {
             return Response.status(400).entity("Error in receiving the data").build()
         }
+    }
+
+    @Path("/deleteSheet/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @GET
+    fun deleteSheet(@PathParam("id")id: String): Response {
+        val backgroundTask = map.computeIfPresent("table$id") { _, backgroundTask -> backgroundTask }
+        if (backgroundTask != null) {
+            backgroundTask.stop()
+            map.remove("table$id")
+        }
+        sheetsInfoService.removeById(id)
+        sheetTableService.removeTable("table$id")
+        return Response.status(200).entity("Success").build()
     }
 
     @Path("/getSheets")

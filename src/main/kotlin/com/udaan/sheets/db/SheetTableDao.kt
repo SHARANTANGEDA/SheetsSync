@@ -54,6 +54,11 @@ class SheetTableService {
     fun getData(tableName: String, columnName:String): List<String> {
         return sheetsTableDao.getData(tableName, columnName)
     }
+
+    fun removeTable(tableName:String): Int {
+        sheetsTableDao.deleteTable(tableName)
+        return 1
+    }
 //    fun remove(spreadsheetid: String, sheetname: String): Int {
 //        sheetsTableDao.remove(spreadsheetid, sheetname)
 //        return 1

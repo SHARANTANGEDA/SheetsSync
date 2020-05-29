@@ -1,9 +1,13 @@
 # Sync Google Spreadsheets with SQLITE Database
 
-#### _Application is still in development_
-#### _Backend Service has been Implemented_
-#### _A Glimpse of UI_
-![Image of UI](home.png)
+#### _Application is in Alpha Releasable and Testing Stage_
+##### _Landing Page as well as Enter Sheets Page_
+![Image of UI](readmePic/landing.png)
+##### _View All Sheets_
+![Image of UI](readmePic/home.png)
+##### _View Data in a Sheet_
+![Image of UI](readmePic/sheet.png)
+
 ### Stack Used
 1. Kotlin with DropWizard Framework
 2. SQLite3 Database

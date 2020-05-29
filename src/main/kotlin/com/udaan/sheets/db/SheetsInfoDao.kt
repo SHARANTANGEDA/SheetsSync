@@ -34,6 +34,9 @@ interface SheetsInfoDao {
     @SqlUpdate("delete from SheetsInfo where spreadsheetid = :spreadsheetid and sheetname = :sheetname")
     fun remove(@Bind("spreadsheetid") spreadsheetid: String, @Bind("sheetname")sheetname: String)
 
+    @SqlUpdate("delete from SheetsInfo where id = :id")
+    fun removeById(@Bind("id") id: String)
+
     @SqlQuery("select * from SheetsInfo where state= :state")
     fun getActiveSheets(@Bind("state") state: Int): List<SheetsInfo>?
 
@@ -78,8 +81,8 @@ class SheetsInfoService {
         return sheetsInfoDao.getInfo(spreadsheetid, sheetname)
     }
 
-    fun remove(spreadsheetid: String, sheetname: String): Int {
-        sheetsInfoDao.remove(spreadsheetid, sheetname)
+    fun removeById(id: String): Int {
+        sheetsInfoDao.removeById(id)
         return 1
     }
 

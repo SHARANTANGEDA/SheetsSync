@@ -1,14 +1,10 @@
-import {GET_FACULTY_HOME, GET_HOD_HOME, GET_SA_HOME, GET_STUDENT_HOME, HOME_LOADING} from '../actions/types'
+import {GET_HOME, GET_SHEET, HOME_LOADING} from '../actions/types'
 
 const initialState = {
   home: null,
   loading: true,
-  studentHome:null,
-  invalid: false,
-  facultyHome: null,
-  facLoading: true,
-  hodLoading: true,
-  hodHome: null
+  sheet: null,
+  loadSheet: true
 };
 
 export default function(state = initialState, action) {
@@ -17,39 +13,23 @@ export default function(state = initialState, action) {
       return {
         ...state,
         loading: true,
-        home: null,
-        studentHome: null,
-        invalid: false,
-        facultyHome: null,
-        facLoading: true,
-        hodLoading: true,
-        hodHome: null
+        home: [],
+        sheet: [],
+        loadSheet: true
       };
 
-    case GET_SA_HOME:
+    case GET_HOME:
       return {
         ...state,
         home: action.payload,
         loading: false
       };
-    case GET_STUDENT_HOME:
+    case  GET_SHEET:
       return {
         ...state,
-        studentHome: action.payload,
-        loading: false
-      };
-    case GET_FACULTY_HOME:
-      return {
-        ...state,
-        facultyHome: action.payload,
-        facLoading: false
-      };
-    case GET_HOD_HOME:
-      return {
-        ...state,
-        hodHome: action.payload,
-        hodLoading: false
-      };
+        sheet: action.payload,
+        loadSheet: false
+      }
     default:
       return state;
 

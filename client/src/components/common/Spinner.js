@@ -1,12 +1,12 @@
 import React from 'react'
-import spinner from './spinner.gif'
+import loading from './loading.gif'
 
 export default () => {
   return (
-    <div>
+    <div className='text-center d-flex justify-content-center'>
       <img
-        src={spinner}
-        style={{ width: '200px', margin: 'auto', display: 'block' }}
+        src={loading}
+        style={{ width: '300px', margin: 'auto', display: 'block' }}
         alt="Loading..."
       />
     </div>
