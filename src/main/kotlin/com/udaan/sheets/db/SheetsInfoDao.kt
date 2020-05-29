@@ -40,6 +40,9 @@ interface SheetsInfoDao {
     @SqlQuery("select * from SheetsInfo where id= :id")
     fun getInfoById(@Bind("id") id: Int): SheetsInfo?
 
+    @SqlQuery("select * from SheetsInfo")
+    fun getAllSheets(): List<SheetsInfo>?
+
 }
 
 
@@ -86,6 +89,10 @@ class SheetsInfoService {
 
     fun getInfoById(id: Int): SheetsInfo? {
         return sheetsInfoDao.getInfoById(id)
+    }
+
+    fun getAllSheets(): List<SheetsInfo>? {
+        return sheetsInfoDao.getAllSheets()
     }
 
 }

@@ -1,13 +1,10 @@
 package com.udaan.sheets.db
-import com.udaan.sheets.models.SheetsInfoMapper
-import org.jdbi.v3.sqlobject.config.RegisterRowMapper
-import org.jdbi.v3.sqlobject.customizer.Bind
+//import com.udaan.sheets.models.SheetsTableMapper
 import org.jdbi.v3.sqlobject.customizer.Define
-import org.jdbi.v3.sqlobject.statement.SqlBatch
 import org.jdbi.v3.sqlobject.statement.SqlQuery
 import org.jdbi.v3.sqlobject.statement.SqlUpdate
 
-@RegisterRowMapper(SheetsInfoMapper::class)
+//@RegisterRowMapper(SheetsTableMapper::class)
 public interface SheetTableDao {
 
     @SqlUpdate("create table if not exists <tableName> (<columns>)")
@@ -19,11 +16,15 @@ public interface SheetTableDao {
     @SqlUpdate("insert into <tableName> (<columns>) values <columnValue>")
     fun insert(@Define("tableName") tableName: String, @Define("columns") columns: String, @Define("columnValue") columnValues: String)
 
+    @SqlQuery("select <columnName> from <tableName>")
+    fun getData(@Define("tableName") tableName: String, @Define("columnName") columnName: String): List<String>
+
 //    @SqlUpdate("delete from <tableName> where spreadsheetid = :spreadsheetid and sheetname = :sheetname") //(<columnValue>)
 //    fun remove(@Define("tableName") tableName: String, @Bind("spreadsheetid") spreadsheetid: String, @Bind("sheetname")sheetname: String)
 
-
 }
+
+
 
 
 class SheetTableService {
@@ -49,6 +50,9 @@ class SheetTableService {
     fun insert(tableName: String, columns: String, columnValues: String): Int {
         sheetsTableDao.insert(tableName, columns, columnValues)
         return 1
+    }
+    fun getData(tableName: String, columnName:String): List<String> {
+        return sheetsTableDao.getData(tableName, columnName)
     }
 //    fun remove(spreadsheetid: String, sheetname: String): Int {
 //        sheetsTableDao.remove(spreadsheetid, sheetname)

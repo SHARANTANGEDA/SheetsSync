@@ -16,7 +16,6 @@ import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import org.eclipse.jetty.servlets.CrossOriginFilter
 import org.jdbi.v3.core.Jdbi
-import org.sqlite.SQLiteException
 import java.util.*
 import javax.servlet.DispatcherType
 

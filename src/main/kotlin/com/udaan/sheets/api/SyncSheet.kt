@@ -8,6 +8,8 @@ import com.udaan.sheets.models.SheetsInfo
 import io.dropwizard.setup.Environment
 import org.jdbi.v3.core.statement.UnableToCreateStatementException
 import org.sqlite.SQLiteException
+import java.util.stream.Collectors
+import java.util.stream.IntStream
 import javax.ws.rs.*
 import javax.ws.rs.core.Form
 import javax.ws.rs.core.MediaType
@@ -134,6 +136,57 @@ class SheetSync(
         }
     }
 
+    @Path("/getTable/{id}/{cols}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @GET
+    fun getTableData(@PathParam("id") id: String, @PathParam("cols") cols: String): Response {
+        try {
+            val colNo = cols.toInt()
+            val data: MutableList<List<String>> = mutableListOf()
+            var list =sheetTableService.getData(id, "rowId")
+            data.add(list)
+            println(list.size)
+            for(i in 1 until colNo) {
+                list =sheetTableService.getData(id, "col$i")
+                data.add(list)
+                println(list.size)
+            }
+            val transData = transpose(data.toList())
+            println(transData)
+            return Response.status(200).entity(transData).build()
+        }catch (e:Exception) {
+            return Response.status(400).entity("Error in receiving the data").build()
+        }
+    }
+
+    @Path("/getSheets")
+    @Produces(MediaType.APPLICATION_JSON)
+    @GET
+    fun getAllTables(): Response {
+        val data = sheetsInfoService.getAllSheets()
+        return if (data!=null) {
+            Response.status(200).entity(data).build()
+        }else {
+            Response.status(404).entity("Data Not available").build()
+        }
+    }
+
+    private fun <T> transpose(list: List<List<T>>): List<List<T>?>? {
+        val N = list.stream()
+            .mapToInt { l: List<T> -> l.size }.max()
+            .orElse(-1)
+        val iterList = list.stream()
+            .map { it.iterator() }
+            .collect(Collectors.toList())
+        return IntStream.range(0, N)
+            .mapToObj {
+                iterList.stream()
+                    .filter { it.hasNext() }
+                    .map { m: Iterator<T> -> m.next() }
+                    .collect(Collectors.toList())
+            }
+            .collect(Collectors.toList())
+    }
 
     private fun syncStructuredTable(tableName: String, columnNames: List<String>, columnTypes: List<String>,
                                     hasLabel: Boolean, sheetData: List<List<Any>>) {
