@@ -1,4 +1,4 @@
-# Sync Google Spreadsheets with SQLITE Database
+# Sync Google Spreadsheets seamlessly with SQLite3 offline database
 
 #### _Application is in Testing & Review Stage_
 ##### _Landing Page as well as Enter Sheets Page_
@@ -8,10 +8,14 @@
 ##### _View Data in a Sheet_
 ![Image of UI](readmePic/sheet.png)
 
-### Stack Used
+### Steps to Run the Dropwizard Service
+1. Create google service account and add credentials to 
+    `src/main/resources/credentials.json`  
+2. Now in project home directory run
+`./gradlew run`
+3. The above command will launch the server `http://localhost:8000/api/enter`
 
-
-## Steps to run the ReactJS Client
+### Steps to run the ReactJS Client
 1. Move into client/src
 `cd ./client/src`
 2. Install **_node_modules_**
@@ -20,17 +24,9 @@
 `npm start`
 4. On running the above command a client with `http://localhost:3000`
 
-## Steps to Run the Dropwizard Service
-1. Create google service account and add credentials to 
-    `src/main/resources/credentials.json`  
-2. Now in project home directory run
-`./gradlew run`
-3. The above command will launch the server `http://localhost:8000/api/enter`
-
 ##### _Now the React Client will fetch the required data and is connected to the server_ 
 
-
-#### Structured Sync was removed to avoid SQL Injection attacks, and avoid failure when google sheet schema is changed
+Structured Sync was removed to avoid SQL Injection attacks, and avoid failure when google sheet schema is changed
 
 ## For Collaborators
 This is created using the following stack
