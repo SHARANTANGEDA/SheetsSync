@@ -26,7 +26,8 @@
 
 ##### _Now the React Client will fetch the required data and is connected to the server_ 
 
-Structured Sync was removed to avoid SQL Injection attacks, and avoid failure when google sheet schema is changed
+##### The application handles possible SQL injection attacks by sanitizing before data entries and updates
+##### Currently, google sheets sync every 30 seconds, which can be always changed
 
 ## For Collaborators
 This is created using the following stack
