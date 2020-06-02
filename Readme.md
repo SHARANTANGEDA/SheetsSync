@@ -1,6 +1,6 @@
 # Sync Google Spreadsheets seamlessly with SQLite3 offline database
 
-#### _Application is in Testing & Review Stage_
+### Intro to UI
 ##### _Landing Page as well as Enter Sheets Page_
 ![Image of UI](readmePic/landing.png)
 ##### _View All Sheets_
