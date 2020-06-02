@@ -41,3 +41,5 @@ This uses Google Service account so that repeated user authentication is not req
 
 And as Organization wide access is not given to the account, before syncing a sheet, it should be shared with the service account email address 
 
+### Credits
+Thanks to Amod Malviya, Co Founder Udaan.com, for his support in this project
